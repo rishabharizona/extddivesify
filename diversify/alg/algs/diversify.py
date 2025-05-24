@@ -43,15 +43,15 @@ class Diversify(Algorithm):
 
     def update_d(self, minibatch, opt):
         all_x1 = minibatch[0].cuda().float()
-        all_d1 = minibatch[1].cuda().long()
-        all_c1 = minibatch[4].cuda().long()
+        all_c1 = minibatch[1].cuda().long()
+        all_d1 = minibatch[4].cuda().long()
         z1 = self.dbottleneck(self.featurizer(all_x1))
         disc_in1 = Adver_network.ReverseLayerF.apply(z1, self.args.alpha1)
         disc_out1 = self.ddiscriminator(disc_in1)
-        disc_loss = F.cross_entropy(disc_out1, all_d1, reduction='mean')
+        disc_loss = F.cross_entropy(disc_out1, all_c1, reduction='mean')
         cd1 = self.dclassifier(z1)
         ent_loss = Entropylogits(cd1)*self.args.lam + \
-            F.cross_entropy(cd1, all_c1)
+            F.cross_entropy(cd1, all_d1)
         loss = ent_loss+disc_loss
         opt.zero_grad()
         loss.backward()
