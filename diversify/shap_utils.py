@@ -18,7 +18,7 @@ class PredictWrapper(torch.nn.Module):
 def get_shap_explainer(model, background_data):
     model.eval()
     wrapped = PredictWrapper(model)
-    return shap.Explainer(wrapped, background_data) 
+    return shap.DeepExplainer(wrapped, background_data)
 
 def compute_shap_values(explainer, inputs):
     return explainer(inputs)
