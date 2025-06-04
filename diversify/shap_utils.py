@@ -1,4 +1,3 @@
-
 import shap
 import torch
 import numpy as np
@@ -27,6 +26,7 @@ def compute_shap_values(explainer, inputs):
     return explainer(inputs)
 
 def _get_shap_array(shap_values):
+    # Handle list or Explanation object
     if isinstance(shap_values, list):
         return shap_values[0].values
     return shap_values.values
@@ -39,31 +39,39 @@ def plot_summary(shap_values, inputs, output_path="shap_summary.png"):
 
     if flat_inputs.shape[1] != flat_shap_values.shape[1]:
         print(f"[WARN] Adjusting flat_inputs from {flat_inputs.shape[1]} to {flat_shap_values.shape[1]} to match SHAP values.")
-        flat_inputs = np.repeat(flat_inputs, flat_shap_values.shape[1] // flat_inputs.shape[1], axis=1)
+        # Repeat features to match shap values size (careful here, depends on data shape)
+        repeat_factor = flat_shap_values.shape[1] // flat_inputs.shape[1]
+        flat_inputs = np.repeat(flat_inputs, repeat_factor, axis=1)
 
     plt.figure()
     shap.summary_plot(flat_shap_values, flat_inputs, show=False)
     plt.savefig(output_path, dpi=300, bbox_inches="tight")
     plt.close()
 
-# ✅ Compatible with SHAP v0.40+ force plot API (text mode)
+# ✅ Updated force plot for SHAP v0.20+ with multi-output support
 def plot_force(explainer, shap_values, inputs, index=0, output_path="shap_force.html"):
     shap_array = _get_shap_array(shap_values)
 
-    # Flatten the SHAP values for the selected instance
-    flat_shap = shap_array[index].reshape(-1)
+    # Handle multi-output SHAP values (e.g., multi-class classification)
+    if shap_array.ndim == 3:
+        # Assume shape (samples, features, outputs), pick first output
+        shap_for_instance = shap_array[index, :, 0]
+    elif shap_array.ndim == 2:
+        # Shape (samples, features)
+        shap_for_instance = shap_array[index]
+    else:
+        raise ValueError(f"Unexpected shape for shap_array: {shap_array.shape}")
 
-    # Get scalar base value
-    if explainer is not None and hasattr(explainer, "expected_value"):
-        expected_value = (
-            explainer.expected_value[0]
-            if isinstance(explainer.expected_value, list)
-            else explainer.expected_value
-        )
+    # Get expected value matching the output dimension
+    if hasattr(explainer, "expected_value"):
+        if isinstance(explainer.expected_value, (list, np.ndarray)):
+            expected_value = explainer.expected_value[0]
+        else:
+            expected_value = explainer.expected_value
     else:
         expected_value = 0
 
-    force_html = shap.plots.force(expected_value, flat_shap)
+    force_html = shap.plots.force(expected_value, shap_for_instance)
     shap.save_html(output_path, force_html)
 
 def evaluate_shap_impact(model, inputs, shap_values, top_k=10):
