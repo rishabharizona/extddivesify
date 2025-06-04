@@ -14,6 +14,8 @@ def accuracy(network, loader, weights, usedpredict='p'):
     correct = 0
     total = 0
     weights_offset = 0
+    if loader is None:
+        return 0.0
 
     network.eval()
     with torch.no_grad():
@@ -39,6 +41,7 @@ def accuracy(network, loader, weights, usedpredict='p'):
                             batch_weights).sum().item()
             total += batch_weights.sum().item()
     network.train()
+    return correct / total if total > 0 else 0.0
 def predict_proba(network, x):
     network.eval()
     with torch.no_grad():
