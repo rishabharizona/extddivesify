@@ -41,7 +41,8 @@ def evaluate_shap_impact(model, inputs, shap_values, top_k=10):
 
 def get_background_batch(loader, size=100):
     x_bg = []
-    for x, _ in loader:
+    for batch in loader:
+        x = batch[0]
         x_bg.append(x)
         if len(torch.cat(x_bg)) >= size:
             break
