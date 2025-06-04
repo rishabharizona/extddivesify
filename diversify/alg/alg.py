@@ -2,13 +2,7 @@
 # Licensed under the MIT License.
 
 
-#from .algs.diversify import Diversify
-def get_algorithm_class(algorithm_name):
-    if algorithm_name.lower() == 'diversify':
-        from .algs.diversify import Diversify
-        return Diversify
-
-
+from .algs.diversify import Diversify
 ALGORITHMS = [
     'diversify'
 ]
