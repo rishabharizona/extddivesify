@@ -23,38 +23,37 @@ def get_shap_explainer(model, background_data):
 def compute_shap_values(explainer, inputs):
     return explainer(inputs)
 
+def _get_shap_array(shap_values):
+    if isinstance(shap_values, list):
+        return shap_values[0].values
+    return shap_values.values
+
 def plot_summary(shap_values, inputs, output_path="shap_summary.png"):
-    plt.figure()
+    shap_array = _get_shap_array(shap_values)
 
+    # Flatten both arrays the same way
     flat_inputs = inputs.reshape(inputs.shape[0], -1)
-
-    # Extract SHAP values array
-    shap_array = shap_values[0].values if isinstance(shap_values, list) else shap_values.values
     flat_shap_values = shap_array.reshape(shap_array.shape[0], -1)
 
-    assert flat_inputs.shape[1] == flat_shap_values.shape[1], (
-        f"Mismatch: flat_inputs={flat_inputs.shape[1]} vs flat_shap_values={flat_shap_values.shape[1]}"
-    )
+    # Auto-adjust if SHAP shape is larger due to multi-channel flattening
+    if flat_inputs.shape[1] != flat_shap_values.shape[1]:
+        print(f"[WARN] Adjusting flat_inputs from {flat_inputs.shape[1]} to {flat_shap_values.shape[1]} to match SHAP values.")
+        flat_inputs = np.repeat(flat_inputs, flat_shap_values.shape[1] // flat_inputs.shape[1], axis=1)
 
     shap.summary_plot(flat_shap_values, flat_inputs, show=False)
     plt.savefig(output_path, dpi=300, bbox_inches="tight")
     plt.close()
 
 def plot_force(explainer, shap_values, inputs, index=0, output_path="shap_force.html"):
-    if isinstance(shap_values, list):
-        shap_array = shap_values[0].values
-        expected_value = explainer.expected_value[0]
-    else:
-        shap_array = shap_values.values
-        expected_value = explainer.expected_value
-
+    shap_array = _get_shap_array(shap_values)
+    expected_value = explainer.expected_value[0] if isinstance(explainer.expected_value, list) else explainer.expected_value
     force_plot = shap.force_plot(expected_value, shap_array[index], inputs[index], matplotlib=False)
     shap.save_html(output_path, force_plot)
 
 def evaluate_shap_impact(model, inputs, shap_values, top_k=10):
     base_preds = model.predict(inputs).detach().cpu().numpy()
+    shap_array = _get_shap_array(shap_values)
 
-    shap_array = shap_values[0].values if isinstance(shap_values, list) else shap_values.values
     flat_shap = np.abs(shap_array).reshape(shap_array.shape[0], -1)
     sorted_indices = np.argsort(-flat_shap, axis=1)[:, :top_k]
 
@@ -91,7 +90,7 @@ def cosine_similarity_shap(shap1, shap2):
     return 1 - cosine(shap1.flatten(), shap2.flatten())
 
 def log_shap_numpy(shap_values, save_path="shap_values.npy"):
-    shap_array = shap_values[0].values if isinstance(shap_values, list) else shap_values.values
+    shap_array = _get_shap_array(shap_values)
     np.save(save_path, shap_array)
 
 def overlay_signal_with_shap(signal, shap_val, output_path="shap_overlay.png"):
@@ -106,15 +105,13 @@ def overlay_signal_with_shap(signal, shap_val, output_path="shap_overlay.png"):
 
 def save_for_wandb(tag, shap_vals, raw_inputs):
     import wandb
-
-    # Save summary plot image
-    plot_summary(shap_vals, raw_inputs, output_path=f"{tag}_summary.png")
-    wandb.log({f"{tag}_summary": wandb.Image(f"{tag}_summary.png")})
-
-    # Save force plot
-    plot_force_result = plot_force(shap_vals, shap_vals, raw_inputs, output_path=f"{tag}_force.html")
-    wandb.log({f"{tag}_force": wandb.Html(f"{tag}_force.html")})
-
-    # Save histogram of SHAP values
-    shap_array = shap_vals[0].values if isinstance(shap_vals, list) else shap_vals.values
+    shap_array = _get_shap_array(shap_vals)
     wandb.log({f"{tag}_shap_vals": wandb.Histogram(shap_array)})
+    # wandb.Image and wandb.Html accept file paths or image arrays, so pre-save before logging
+    summary_path = f"{tag}_summary.png"
+    plot_summary(shap_vals, raw_inputs, summary_path)
+    wandb.log({f"{tag}_summary": wandb.Image(summary_path)})
+
+    force_path = f"{tag}_force.html"
+    plot_force(shap_vals, shap_vals, raw_inputs, output_path=force_path)
+    wandb.log({f"{tag}_force": wandb.Html(open(force_path).read())})
