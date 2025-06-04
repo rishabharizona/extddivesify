@@ -101,13 +101,13 @@ def main(args):
 
     print(f'Target acc: {target_acc:.4f}')
     if args.enable_shap:
-    print("Running SHAP explainability...")
-    background = get_background_batch(valid_loader, size=64).to('cuda')
-    X_eval = background[:10]
-    shap_explainer = get_shap_explainer(algorithm, background)
-    shap_vals = compute_shap_values(shap_explainer, X_eval)
-    plot_summary(shap_vals, X_eval.cpu().numpy(), output_path="shap_summary.png")
-    plot_force(shap_explainer, shap_vals, X_eval.cpu().numpy(), index=0, output_path="shap_force.html")
+        print("Running SHAP explainability...")
+        background = get_background_batch(valid_loader, size=64).to('cuda')
+        X_eval = background[:10]
+        shap_explainer = get_shap_explainer(algorithm, background)
+        shap_vals = compute_shap_values(shap_explainer, X_eval)
+        plot_summary(shap_vals, X_eval.cpu().numpy(), output_path="shap_summary.png")
+        plot_force(shap_explainer, shap_vals, X_eval.cpu().numpy(), index=0, output_path="shap_force.html")
 
 
 if __name__ == '__main__':
