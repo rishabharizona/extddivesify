@@ -141,6 +141,9 @@ def get_args():
     parser.add_argument('--test_envs', type=int, nargs='+', default=[0])
     parser.add_argument('--output', type=str, default="train_output")
     parser.add_argument('--weight_decay', type=float, default=5e-4)
+    parser.add_argument('--enable_shap', action='store_true', help='Enable SHAP explainability')
+    parser.add_argument('--resume', type=str, default=None, help='Checkpoint path for SHAP evaluation')
+
     args = parser.parse_args()
     args.steps_per_epoch = 10000000000
     args.data_dir = args.data_file+args.data_dir
