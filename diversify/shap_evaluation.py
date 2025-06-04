@@ -1,9 +1,12 @@
 import sys
+import os
 sys.path.append(".")
+
 import torch
 import numpy as np
 from alg.modelopera import predict_proba
 from alg.alg import get_algorithm_class
+from alg.algs.diversify import Diversify
 from shap_utils import (
     get_shap_explainer,
     compute_shap_values,
@@ -18,7 +21,7 @@ from shap_utils import (
     get_background_batch
 )
 from datautil.getdataloader_single import get_act_dataloader
-import os
+from utils.params import parse_args
 
 
 def run_shap_evaluation(model, loader, device, out_dir="shap_outputs"):
@@ -47,7 +50,6 @@ def run_shap_evaluation(model, loader, device, out_dir="shap_outputs"):
     log_shap_numpy(shap_vals, save_path=os.path.join(out_dir, "shap_values.npy"))
 
     print("Computing SHAP agreement metrics...")
-    # Simulate pairwise stability across 2 samples
     jaccard = compute_jaccard_topk(shap_vals.values[0], shap_vals.values[1], k=10)
     tau = compute_kendall_tau(shap_vals.values[0], shap_vals.values[1])
     cos_sim = cosine_similarity_shap(shap_vals.values[0], shap_vals.values[1])
@@ -59,8 +61,6 @@ def run_shap_evaluation(model, loader, device, out_dir="shap_outputs"):
 
 if __name__ == "__main__":
     import argparse
-    from algs.diversify import Algorithm
-    from utils.params import parse_args
 
     def add_shap_flag():
         parser = argparse.ArgumentParser()
@@ -78,8 +78,10 @@ if __name__ == "__main__":
         exit()
 
     print("Loading model and data loader...")
-    loader, _ = get_loader(args)
-    model = Algorithm(args).to(device)
-    model.load_state_dict(torch.load(shap_args.resume))
+    train_loader, _, valid_loader, target_loader, _, _, _ = get_act_dataloader(args)
 
-    run_shap_evaluation(model, loader["val_loader"], device)
+    model = Diversify(args).to(device)
+    model.load_state_dict(torch.load(shap_args.resume))
+    model.eval()
+
+    run_shap_evaluation(model, valid_loader, device)
