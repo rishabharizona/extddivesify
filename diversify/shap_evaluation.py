@@ -1,9 +1,9 @@
 import sys
-sys.path.append("./alg")  # ✅ So Python can find algs/modelopera.py
-sys.path.append("./datautil")
+sys.path.append(".")
 import torch
 import numpy as np
-from modelopera import predict_proba
+from alg.modelopera import predict_proba
+from alg.alg import get_algorithm_class
 from shap_utils import (
     get_shap_explainer,
     compute_shap_values,
