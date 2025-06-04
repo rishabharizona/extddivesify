@@ -4,7 +4,7 @@ import numpy as np
 import matplotlib.pyplot as plt
 import os
 from scipy.spatial.distance import cosine
-from scipy.stats import kendalltau, spearmanr
+from scipy.stats import kendalltau
 from sklearn.metrics import accuracy_score
 
 class PredictWrapper(torch.nn.Module):
@@ -26,21 +26,14 @@ def compute_shap_values(explainer, inputs):
 def plot_summary(shap_values, inputs, output_path="shap_summary.png"):
     plt.figure()
 
-    # Flatten the inputs
     flat_inputs = inputs.reshape(inputs.shape[0], -1)
 
-    # Handle multi-output SHAP values (e.g., classification models)
-    if isinstance(shap_values, list):
-        shap_array = shap_values[0]  # Choose the SHAP values for the first output
-    else:
-        shap_array = shap_values
-
-    # Flatten SHAP values
+    # Extract SHAP values array
+    shap_array = shap_values[0].values if isinstance(shap_values, list) else shap_values.values
     flat_shap_values = shap_array.reshape(shap_array.shape[0], -1)
 
     assert flat_inputs.shape[1] == flat_shap_values.shape[1], (
-        f"Mismatch: flat_inputs={flat_inputs.shape[1]} features, "
-        f"flat_shap_values={flat_shap_values.shape[1]} SHAP features"
+        f"Mismatch: flat_inputs={flat_inputs.shape[1]} vs flat_shap_values={flat_shap_values.shape[1]}"
     )
 
     shap.summary_plot(flat_shap_values, flat_inputs, show=False)
@@ -49,10 +42,10 @@ def plot_summary(shap_values, inputs, output_path="shap_summary.png"):
 
 def plot_force(explainer, shap_values, inputs, index=0, output_path="shap_force.html"):
     if isinstance(shap_values, list):
-        shap_array = shap_values[0]
+        shap_array = shap_values[0].values
         expected_value = explainer.expected_value[0]
     else:
-        shap_array = shap_values
+        shap_array = shap_values.values
         expected_value = explainer.expected_value
 
     force_plot = shap.force_plot(expected_value, shap_array[index], inputs[index], matplotlib=False)
@@ -61,11 +54,7 @@ def plot_force(explainer, shap_values, inputs, index=0, output_path="shap_force.
 def evaluate_shap_impact(model, inputs, shap_values, top_k=10):
     base_preds = model.predict(inputs).detach().cpu().numpy()
 
-    if isinstance(shap_values, list):
-        shap_array = shap_values[0]
-    else:
-        shap_array = shap_values
-
+    shap_array = shap_values[0].values if isinstance(shap_values, list) else shap_values.values
     flat_shap = np.abs(shap_array).reshape(shap_array.shape[0], -1)
     sorted_indices = np.argsort(-flat_shap, axis=1)[:, :top_k]
 
@@ -102,10 +91,7 @@ def cosine_similarity_shap(shap1, shap2):
     return 1 - cosine(shap1.flatten(), shap2.flatten())
 
 def log_shap_numpy(shap_values, save_path="shap_values.npy"):
-    if isinstance(shap_values, list):
-        shap_array = shap_values[0]
-    else:
-        shap_array = shap_values
+    shap_array = shap_values[0].values if isinstance(shap_values, list) else shap_values.values
     np.save(save_path, shap_array)
 
 def overlay_signal_with_shap(signal, shap_val, output_path="shap_overlay.png"):
@@ -120,16 +106,15 @@ def overlay_signal_with_shap(signal, shap_val, output_path="shap_overlay.png"):
 
 def save_for_wandb(tag, shap_vals, raw_inputs):
     import wandb
+
+    # Save summary plot image
     plot_summary(shap_vals, raw_inputs, output_path=f"{tag}_summary.png")
-    plot_force_output = f"{tag}_force.html"
-    plot_force(None, shap_vals, raw_inputs, output_path=plot_force_output)
-
     wandb.log({f"{tag}_summary": wandb.Image(f"{tag}_summary.png")})
-    wandb.log({f"{tag}_force": wandb.Html(open(plot_force_output).read())})
-    
-    if isinstance(shap_vals, list):
-        shap_array = shap_vals[0]
-    else:
-        shap_array = shap_vals
 
+    # Save force plot
+    plot_force_result = plot_force(shap_vals, shap_vals, raw_inputs, output_path=f"{tag}_force.html")
+    wandb.log({f"{tag}_force": wandb.Html(f"{tag}_force.html")})
+
+    # Save histogram of SHAP values
+    shap_array = shap_vals[0].values if isinstance(shap_vals, list) else shap_vals.values
     wandb.log({f"{tag}_shap_vals": wandb.Histogram(shap_array)})
