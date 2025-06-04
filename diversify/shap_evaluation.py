@@ -17,7 +17,7 @@ from shap_utils import (
     log_shap_numpy,
     get_background_batch
 )
-from datautil.getdataloader_single import get_loader
+from datautil.getdataloader_single import get_act_dataloader
 import os
 
 
