@@ -7,6 +7,7 @@ from scipy.spatial.distance import cosine
 from scipy.stats import kendalltau
 from sklearn.metrics import accuracy_score
 
+# ✅ Wrapper to make model.predict compatible with SHAP
 class PredictWrapper(torch.nn.Module):
     def __init__(self, model):
         super().__init__()
@@ -15,6 +16,7 @@ class PredictWrapper(torch.nn.Module):
     def forward(self, x):
         return self.model.predict(x)
 
+# ✅ SHAP explainer using DeepExplainer (PyTorch backend safe)
 def get_shap_explainer(model, background_data):
     model.eval()
     wrapped = PredictWrapper(model)
@@ -28,32 +30,31 @@ def _get_shap_array(shap_values):
         return shap_values[0].values
     return shap_values.values
 
+# ✅ Summary plot with flatten + warning-safe broadcasting
 def plot_summary(shap_values, inputs, output_path="shap_summary.png"):
     shap_array = _get_shap_array(shap_values)
-
-    # Flatten both arrays the same way
     flat_inputs = inputs.reshape(inputs.shape[0], -1)
     flat_shap_values = shap_array.reshape(shap_array.shape[0], -1)
 
-    # Auto-adjust if SHAP shape is larger due to multi-channel flattening
     if flat_inputs.shape[1] != flat_shap_values.shape[1]:
         print(f"[WARN] Adjusting flat_inputs from {flat_inputs.shape[1]} to {flat_shap_values.shape[1]} to match SHAP values.")
         flat_inputs = np.repeat(flat_inputs, flat_shap_values.shape[1] // flat_inputs.shape[1], axis=1)
 
+    plt.figure()
     shap.summary_plot(flat_shap_values, flat_inputs, show=False)
     plt.savefig(output_path, dpi=300, bbox_inches="tight")
     plt.close()
 
+# ✅ Compatible with SHAP v0.40+ force plot API (text mode)
 def plot_force(explainer, shap_values, inputs, index=0, output_path="shap_force.html"):
     shap_array = _get_shap_array(shap_values)
     expected_value = explainer.expected_value[0] if isinstance(explainer.expected_value, list) else explainer.expected_value
-    force_plot = shap.force_plot(expected_value, shap_array[index], inputs[index], matplotlib=False)
-    shap.save_html(output_path, force_plot)
+    force_html = shap.plots.force(expected_value, shap_array[index], matplotlib=False)
+    shap.save_html(output_path, force_html)
 
 def evaluate_shap_impact(model, inputs, shap_values, top_k=10):
     base_preds = model.predict(inputs).detach().cpu().numpy()
     shap_array = _get_shap_array(shap_values)
-
     flat_shap = np.abs(shap_array).reshape(shap_array.shape[0], -1)
     sorted_indices = np.argsort(-flat_shap, axis=1)[:, :top_k]
 
@@ -103,15 +104,21 @@ def overlay_signal_with_shap(signal, shap_val, output_path="shap_overlay.png"):
     plt.savefig(output_path, dpi=300)
     plt.close()
 
+# ✅ wandb-safe version using pre-saved plots
 def save_for_wandb(tag, shap_vals, raw_inputs):
     import wandb
     shap_array = _get_shap_array(shap_vals)
+
+    # Save histogram of SHAP values
     wandb.log({f"{tag}_shap_vals": wandb.Histogram(shap_array)})
-    # wandb.Image and wandb.Html accept file paths or image arrays, so pre-save before logging
+
+    # Summary plot
     summary_path = f"{tag}_summary.png"
     plot_summary(shap_vals, raw_inputs, summary_path)
     wandb.log({f"{tag}_summary": wandb.Image(summary_path)})
 
+    # Force plot (text mode)
     force_path = f"{tag}_force.html"
-    plot_force(shap_vals, shap_vals, raw_inputs, output_path=force_path)
-    wandb.log({f"{tag}_force": wandb.Html(open(force_path).read())})
+    plot_force(None, shap_vals, raw_inputs, output_path=force_path)
+    with open(force_path, "r") as f:
+        wandb.log({f"{tag}_force": wandb.Html(f.read())})
