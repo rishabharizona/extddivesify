@@ -7,9 +7,18 @@ from scipy.spatial.distance import cosine
 from scipy.stats import kendalltau, spearmanr
 from sklearn.metrics import accuracy_score
 
+class PredictWrapper(torch.nn.Module):
+    def __init__(self, model):
+        super().__init__()
+        self.model = model
+
+    def forward(self, x):
+        return self.model.predict(x)
+
 def get_shap_explainer(model, background_data):
     model.eval()
-    return shap.GradientExplainer(model.predict, background_data)
+    wrapped = PredictWrapper(model)
+    return shap.Explainer(wrapped, background_data) 
 
 def compute_shap_values(explainer, inputs):
     return explainer(inputs)
@@ -79,4 +88,5 @@ def save_for_wandb(tag, shap_vals, raw_inputs):
     wandb.log({f"{tag}_summary": wandb.Image(plot_summary(shap_vals, raw_inputs))})
     wandb.log({f"{tag}_force": wandb.Html(plot_force(shap_vals, raw_inputs))})
     wandb.log({f"{tag}_shap_vals": wandb.Histogram(shap_vals.values)})
+
 
