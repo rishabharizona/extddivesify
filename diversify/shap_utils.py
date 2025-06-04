@@ -9,7 +9,7 @@ from sklearn.metrics import accuracy_score
 
 def get_shap_explainer(model, background_data):
     model.eval()
-    return shap.DeepExplainer(model, background_data)
+    return shap.GradientExplainer(model.predict, background_data)
 
 def compute_shap_values(explainer, inputs):
     return explainer(inputs)
@@ -25,7 +25,7 @@ def plot_force(explainer, shap_values, inputs, index=0, output_path="shap_force.
     shap.save_html(output_path, force_plot)
 
 def evaluate_shap_impact(model, inputs, shap_values, top_k=10):
-    base_preds = model(inputs).detach().cpu().numpy()
+    base_preds = model.predict(inputs).detach().cpu().numpy()
     flat_shap = np.abs(shap_values.values).reshape(shap_values.shape[0], -1)
     sorted_indices = np.argsort(-flat_shap, axis=1)[:, :top_k]
 
@@ -35,7 +35,7 @@ def evaluate_shap_impact(model, inputs, shap_values, top_k=10):
         flat[indices] = 0
         masked_inputs[i] = flat.view_as(masked_inputs[i])
 
-    masked_preds = model(masked_inputs).detach().cpu().numpy()
+    masked_preds = model.predict(masked_inputs).detach().cpu().numpy()
     accuracy_drop = np.mean(np.argmax(base_preds, axis=1) != np.argmax(masked_preds, axis=1))
     return base_preds, masked_preds, accuracy_drop
 
@@ -79,3 +79,4 @@ def save_for_wandb(tag, shap_vals, raw_inputs):
     wandb.log({f"{tag}_summary": wandb.Image(plot_summary(shap_vals, raw_inputs))})
     wandb.log({f"{tag}_force": wandb.Html(plot_force(shap_vals, raw_inputs))})
     wandb.log({f"{tag}_shap_vals": wandb.Histogram(shap_vals.values)})
+
