@@ -45,12 +45,20 @@ def plot_summary(shap_values, inputs, output_path="shap_summary.png"):
     plt.savefig(output_path, dpi=300, bbox_inches="tight")
     plt.close()
 
-# ✅ Compatible with SHAP v0.40+ force plot API (text mode)
 def plot_force(explainer, shap_values, inputs, index=0, output_path="shap_force.html"):
     shap_array = _get_shap_array(shap_values)
-    expected_value = explainer.expected_value[0] if isinstance(explainer.expected_value, list) else explainer.expected_value
-    force_html = shap.plots.force(expected_value, shap_array[index], matplotlib=False)
+    expected_value = (
+        explainer.expected_value[0]
+        if explainer is not None and isinstance(explainer.expected_value, list)
+        else explainer.expected_value
+        if explainer is not None
+        else 0  # fallback
+    )
+
+    # ✅ SHAP >= 0.40 requires exactly two args
+    force_html = shap.plots.force(expected_value, shap_array[index])  # removed matplotlib=False
     shap.save_html(output_path, force_html)
+
 
 def evaluate_shap_impact(model, inputs, shap_values, top_k=10):
     base_preds = model.predict(inputs).detach().cpu().numpy()
