@@ -6,8 +6,9 @@ import os
 from scipy.spatial.distance import cosine
 from scipy.stats import kendalltau
 from sklearn.metrics import accuracy_score
+import seaborn as sns
 
-# ✅ Wrapper to make model.predict compatible with SHAP
+# ✅ Wrapper for SHAP to use model.predict
 class PredictWrapper(torch.nn.Module):
     def __init__(self, model):
         super().__init__()
@@ -16,7 +17,7 @@ class PredictWrapper(torch.nn.Module):
     def forward(self, x):
         return self.model.predict(x)
 
-# ✅ SHAP explainer using DeepExplainer (PyTorch backend safe)
+# ✅ SHAP explainer setup
 def get_shap_explainer(model, background_data):
     model.eval()
     wrapped = PredictWrapper(model)
@@ -26,12 +27,11 @@ def compute_shap_values(explainer, inputs):
     return explainer(inputs)
 
 def _get_shap_array(shap_values):
-    # Handle list or Explanation object
     if isinstance(shap_values, list):
         return shap_values[0].values
     return shap_values.values
 
-# ✅ Summary plot with flatten + warning-safe broadcasting
+# ✅ SHAP summary plot for time-series input
 def plot_summary(shap_values, inputs, output_path="shap_summary.png"):
     shap_array = _get_shap_array(shap_values)
     flat_inputs = inputs.reshape(inputs.shape[0], -1)
@@ -39,7 +39,6 @@ def plot_summary(shap_values, inputs, output_path="shap_summary.png"):
 
     if flat_inputs.shape[1] != flat_shap_values.shape[1]:
         print(f"[WARN] Adjusting flat_inputs from {flat_inputs.shape[1]} to {flat_shap_values.shape[1]} to match SHAP values.")
-        # Repeat features to match shap values size (careful here, depends on data shape)
         repeat_factor = flat_shap_values.shape[1] // flat_inputs.shape[1]
         flat_inputs = np.repeat(flat_inputs, repeat_factor, axis=1)
 
@@ -48,32 +47,54 @@ def plot_summary(shap_values, inputs, output_path="shap_summary.png"):
     plt.savefig(output_path, dpi=300, bbox_inches="tight")
     plt.close()
 
-# ✅ Updated force plot for SHAP v0.20+ with multi-output support
+# ✅ SHAP force plot for time-series input
 def plot_force(explainer, shap_values, inputs, index=0, output_path="shap_force.html"):
     shap_array = _get_shap_array(shap_values)
+    shap_for_instance = shap_array[index].reshape(-1)
 
-    # Handle multi-output SHAP values (e.g., multi-class classification)
-    if shap_array.ndim == 3:
-        # Assume shape (samples, features, outputs), pick first output
-        shap_for_instance = shap_array[index, :, 0]
-    elif shap_array.ndim == 2:
-        # Shape (samples, features)
-        shap_for_instance = shap_array[index]
-    else:
-        raise ValueError(f"Unexpected shape for shap_array: {shap_array.shape}")
-
-    # Get expected value matching the output dimension
     if hasattr(explainer, "expected_value"):
-        if isinstance(explainer.expected_value, (list, np.ndarray)):
-            expected_value = explainer.expected_value[0]
-        else:
-            expected_value = explainer.expected_value
+        ev = explainer.expected_value
+        expected_value = ev[0] if isinstance(ev, (list, np.ndarray)) else ev
     else:
         expected_value = 0
 
     force_html = shap.plots.force(expected_value, shap_for_instance)
     shap.save_html(output_path, force_html)
 
+# ✅ Signal overlay for a time-series instance
+def overlay_signal_with_shap(signal, shap_val, output_path="shap_overlay.png"):
+    signal = signal.reshape(-1)
+    shap_val = shap_val.reshape(-1)
+
+    plt.figure(figsize=(12, 4))
+    plt.plot(signal, label="Signal", alpha=0.7)
+    plt.fill_between(np.arange(len(shap_val)), 0, shap_val, color="red", alpha=0.3, label="SHAP")
+    plt.title("Signal with SHAP Overlay")
+    plt.xlabel("Time")
+    plt.ylabel("Signal / SHAP")
+    plt.legend()
+    plt.tight_layout()
+    plt.savefig(output_path, dpi=300)
+    plt.close()
+
+# ✅ SHAP heatmap (channels × time steps)
+def plot_shap_heatmap(shap_values, index=0, output_path="shap_heatmap.png"):
+    shap_array = _get_shap_array(shap_values)
+    instance = shap_array[index]
+
+    if instance.ndim > 2:
+        instance = instance.reshape(instance.shape[0], -1)  # (channels, time)
+    
+    plt.figure(figsize=(12, 6))
+    sns.heatmap(instance, cmap="coolwarm", center=0)
+    plt.title(f"SHAP Heatmap (Instance {index})")
+    plt.xlabel("Time Steps")
+    plt.ylabel("Channels")
+    plt.tight_layout()
+    plt.savefig(output_path, dpi=300)
+    plt.close()
+
+# ✅ Mask top-k important features and check model impact
 def evaluate_shap_impact(model, inputs, shap_values, top_k=10):
     base_preds = model.predict(inputs).detach().cpu().numpy()
     shap_array = _get_shap_array(shap_values)
@@ -90,6 +111,7 @@ def evaluate_shap_impact(model, inputs, shap_values, top_k=10):
     accuracy_drop = np.mean(np.argmax(base_preds, axis=1) != np.argmax(masked_preds, axis=1))
     return base_preds, masked_preds, accuracy_drop
 
+# ✅ Helper: small background batch
 def get_background_batch(loader, size=100):
     x_bg = []
     for batch in loader:
@@ -99,6 +121,7 @@ def get_background_batch(loader, size=100):
             break
     return torch.cat(x_bg)[:size]
 
+# ✅ SHAP similarity measures
 def compute_jaccard_topk(shap1, shap2, k=10):
     top1 = set(np.argsort(-np.abs(shap1.flatten()))[:k])
     top2 = set(np.argsort(-np.abs(shap2.flatten()))[:k])
@@ -112,31 +135,8 @@ def compute_kendall_tau(shap1, shap2):
 def cosine_similarity_shap(shap1, shap2):
     return 1 - cosine(shap1.flatten(), shap2.flatten())
 
+# ✅ Save SHAP values to disk
 def log_shap_numpy(shap_values, save_path="shap_values.npy"):
     shap_array = _get_shap_array(shap_values)
     np.save(save_path, shap_array)
 
-def overlay_signal_with_shap(signal, shap_val, output_path="shap_overlay.png"):
-    plt.figure(figsize=(10, 4))
-    for i in range(signal.shape[1]):
-        plt.plot(signal[:, i], label=f"Feature {i}", alpha=0.6)
-    plt.imshow(np.abs(shap_val.T), aspect='auto', cmap='coolwarm', alpha=0.4)
-    plt.title("Signal with SHAP Attribution")
-    plt.colorbar(label="SHAP Importance")
-    plt.savefig(output_path, dpi=300)
-    plt.close()
-
-def save_for_wandb(tag, shap_vals, raw_inputs):
-    import wandb
-    shap_array = _get_shap_array(shap_vals)
-
-    wandb.log({f"{tag}_shap_vals": wandb.Histogram(shap_array)})
-
-    summary_path = f"{tag}_summary.png"
-    plot_summary(shap_vals, raw_inputs, summary_path)
-    wandb.log({f"{tag}_summary": wandb.Image(summary_path)})
-
-    force_path = f"{tag}_force.html"
-    plot_force(None, shap_vals, raw_inputs, output_path=force_path)
-    with open(force_path, "r") as f:
-        wandb.log({f"{tag}_force": wandb.Html(f.read())})
