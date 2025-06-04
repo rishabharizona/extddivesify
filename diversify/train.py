@@ -7,6 +7,14 @@ from alg import alg, modelopera
 from utils.util import set_random_seed, get_args, print_row, print_args, train_valid_target_eval_names, alg_loss_dict, print_environ
 from datautil.getdataloader_single import get_act_dataloader
 
+from shap_utils import (
+    get_shap_explainer,
+    compute_shap_values,
+    plot_summary,
+    plot_force,
+    get_background_batch
+)
+
 
 def main(args):
     s = print_args(args, [])
@@ -92,6 +100,14 @@ def main(args):
             print_row([results[key] for key in print_key], colwidth=15)
 
     print(f'Target acc: {target_acc:.4f}')
+    if args.enable_shap:
+    print("Running SHAP explainability...")
+    background = get_background_batch(valid_loader, size=64).to('cuda')
+    X_eval = background[:10]
+    shap_explainer = get_shap_explainer(algorithm, background)
+    shap_vals = compute_shap_values(shap_explainer, X_eval)
+    plot_summary(shap_vals, X_eval.cpu().numpy(), output_path="shap_summary.png")
+    plot_force(shap_explainer, shap_vals, X_eval.cpu().numpy(), index=0, output_path="shap_force.html")
 
 
 if __name__ == '__main__':
