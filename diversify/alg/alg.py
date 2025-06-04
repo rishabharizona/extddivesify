@@ -2,7 +2,7 @@
 # Licensed under the MIT License.
 
 
-from algs.diversify import Diversify
+from .algs.diversify import Diversify
 
 ALGORITHMS = [
     'diversify'
