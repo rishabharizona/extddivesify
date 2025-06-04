@@ -21,7 +21,7 @@ from shap_utils import (
     get_background_batch
 )
 from datautil.getdataloader_single import get_act_dataloader
-from utils.params import parse_args
+from utils.util import get_args
 
 
 def run_shap_evaluation(model, loader, device, out_dir="shap_outputs"):
