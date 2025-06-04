@@ -1,5 +1,6 @@
 import sys
 sys.path.append("./alg")  # ✅ So Python can find algs/modelopera.py
+sys.path.append("./datautil")
 import torch
 import numpy as np
 from modelopera import predict_proba
