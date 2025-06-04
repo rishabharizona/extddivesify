@@ -9,7 +9,7 @@ from sklearn.metrics import accuracy_score
 
 def get_shap_explainer(model, background_data):
     model.eval()
-    return shap.Explainer(model, background_data)
+    return shap.DeepExplainer(model, background_data)
 
 def compute_shap_values(explainer, inputs):
     return explainer(inputs)
