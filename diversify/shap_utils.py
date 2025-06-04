@@ -25,9 +25,13 @@ def compute_shap_values(explainer, inputs):
 
 def plot_summary(shap_values, inputs, output_path="shap_summary.png"):
     plt.figure()
-    shap.summary_plot(shap_values.values, inputs, show=False)
+    flat_inputs = inputs.reshape(inputs.shape[0], -1)
+    flat_shap_values = shap_values.values.reshape(shap_values.shape[0], -1)
+
+    shap.summary_plot(flat_shap_values, flat_inputs, show=False)
     plt.savefig(output_path, dpi=300, bbox_inches="tight")
     plt.close()
+
 
 def plot_force(explainer, shap_values, inputs, index=0, output_path="shap_force.html"):
     force_plot = shap.force_plot(explainer.expected_value[0], shap_values.values[index], inputs[index], matplotlib=False)
