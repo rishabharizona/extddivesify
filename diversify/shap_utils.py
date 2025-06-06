@@ -111,18 +111,24 @@ def plot_shap_heatmap(shap_values, index=0, output_path="shap_heatmap.png", log_
 def evaluate_shap_impact(model, inputs, shap_values, top_k=10):
     base_preds = model.predict(inputs).detach().cpu().numpy()
     shap_array = _get_shap_array(shap_values)
+
     flat_shap = np.abs(shap_array).reshape(shap_array.shape[0], -1)
     sorted_indices = np.argsort(-flat_shap, axis=1)[:, :top_k]
 
     masked_inputs = inputs.clone()
+    total_features = masked_inputs[0].numel()
+
     for i, indices in enumerate(sorted_indices):
-        flat = masked_inputs[i].flatten()
+        # Safe clamping
+        indices = np.clip(indices, 0, total_features - 1)
+        flat = masked_inputs[i].view(-1)
         flat[indices] = 0
         masked_inputs[i] = flat.view_as(masked_inputs[i])
 
     masked_preds = model.predict(masked_inputs).detach().cpu().numpy()
     accuracy_drop = np.mean(np.argmax(base_preds, axis=1) != np.argmax(masked_preds, axis=1))
     return base_preds, masked_preds, accuracy_drop
+
 
 # ✅ Background data for DeepExplainer
 def get_background_batch(loader, size=100):
