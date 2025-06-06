@@ -108,14 +108,39 @@ def main(args):
             print_row([results[key] for key in print_key], colwidth=15)
 
     print(f'Target acc: {target_acc:.4f}')
-    if args.enable_shap:
+        if args.enable_shap:
         print("Running SHAP explainability...")
         background = get_background_batch(valid_loader, size=64).to('cuda')
         X_eval = background[:10]
+
+        # 1. Explainer + values
         shap_explainer = get_shap_explainer(algorithm, background)
         shap_vals = compute_shap_values(shap_explainer, X_eval)
+        shap_array = _get_shap_array(shap_vals)
+
+        # 2. Summary and force plot
         plot_summary(shap_vals, X_eval.cpu().numpy(), output_path="shap_summary.png")
         plot_force(shap_explainer, shap_vals, X_eval.cpu().numpy(), index=0, output_path="shap_force.html")
+
+        # 3. Heatmap (optional)
+        overlay_signal_with_shap(X_eval[0].cpu().numpy(), shap_array[0], output_path="shap_overlay_sample0.png")
+
+        # 4. Perturbation drop
+        base_preds, masked_preds, acc_drop = evaluate_shap_impact(algorithm, X_eval, shap_vals, top_k=10)
+        print(f"[SHAP] Perturbation-based accuracy drop: {acc_drop:.4f}")
+
+        # 5. SHAP value logging for meta-analysis
+        log_shap_numpy(shap_vals, save_path="shap_values.npy")
+
+        # 6. SHAP agreement metrics
+        if len(shap_array) > 1:
+            jaccard = compute_jaccard_topk(shap_array[0], shap_array[1], k=10)
+            tau = compute_kendall_tau(shap_array[0], shap_array[1])
+            cos_sim = cosine_similarity_shap(shap_array[0], shap_array[1])
+            print(f"[SHAP] Jaccard similarity (top-10): {jaccard:.4f}")
+            print(f"[SHAP] Kendall’s Tau: {tau:.4f}")
+            print(f"[SHAP] Cosine Similarity: {cos_sim:.4f}")
+
 
 
 if __name__ == '__main__':
