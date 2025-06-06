@@ -9,9 +9,11 @@ from datautil.getdataloader_single import get_act_dataloader
 from shap_utils import (
     get_shap_explainer,
     compute_shap_values,
+    _get_shap_array,
     plot_summary,
     plot_force,
     evaluate_shap_impact,
+    plot_shap_heatmap,
     get_background_batch,
     compute_jaccard_topk,
     compute_kendall_tau,
