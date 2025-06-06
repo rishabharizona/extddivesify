@@ -22,6 +22,13 @@ from shap_utils import (
     overlay_signal_with_shap
 
 )
+from shap_utils_extended import (
+    compute_flip_rate,
+    compute_confidence_change,
+    compute_aopc,
+    compute_feature_coherence,
+    compute_shap_entropy
+)
 
 
 def main(args):
@@ -141,7 +148,21 @@ def main(args):
             print(f"[SHAP] Kendall’s Tau: {tau:.4f}")
             print(f"[SHAP] Cosine Similarity: {cos_sim:.4f}")
 
+        # ✅ Advanced SHAP Metrics
+        flip_rate = compute_flip_rate(base_preds, masked_preds)
+        print(f"[SHAP] Flip Rate: {flip_rate:.4f}")
 
+        conf_delta = compute_confidence_change(base_preds, masked_preds)
+        print(f"[SHAP] Confidence Change: {conf_delta:.4f}")
+
+        aopc = compute_aopc(algorithm, X_eval, shap_vals, evaluate_shap_impact)
+        print(f"[SHAP] AOPC (Area over Perturbation Curve): {aopc:.4f}")
+
+        entropy = compute_shap_entropy(shap_array)
+        print(f"[SHAP] Entropy of SHAP Distribution: {entropy:.4f}")
+
+        coherence = compute_feature_coherence(shap_array)
+        print(f"[SHAP] Feature Coherence Score: {coherence:.4f}")
 
 if __name__ == '__main__':
     args = get_args()
