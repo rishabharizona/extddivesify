@@ -70,19 +70,21 @@ def plot_force(explainer, shap_values, inputs, index=0, output_path="shap_force.
 
 # ✅ Overlay SHAP importance on signal
 def overlay_signal_with_shap(signal, shap_val, output_path="shap_overlay.png", log_to_wandb=False):
-
     signal = signal.reshape(-1)
     shap_val = shap_val.reshape(-1)
+
+    # 🔧 Truncate to same length
     min_len = min(len(signal), len(shap_val))
     signal = signal[:min_len]
     shap_val = shap_val[:min_len]
 
-
+    # 📊 Plot
     plt.figure(figsize=(12, 4))
-    plt.plot(signal, label="Signal", alpha=0.7)
-    plt.fill_between(np.arange(len(shap_val)), 0, shap_val, color="red", alpha=0.3, label="SHAP")
+    plt.plot(signal, label="Signal", color="steelblue", alpha=0.7)
+    plt.fill_between(np.arange(min_len), 0, shap_val, color="red", alpha=0.3, label="SHAP")
+
     plt.title("Signal with SHAP Overlay")
-    plt.xlabel("Time")
+    plt.xlabel("Flattened Feature Index")  # <-- changed
     plt.ylabel("Signal / SHAP")
     plt.legend()
     plt.tight_layout()
@@ -91,6 +93,7 @@ def overlay_signal_with_shap(signal, shap_val, output_path="shap_overlay.png", l
 
     if log_to_wandb:
         wandb.log({"SHAP Overlay": wandb.Image(output_path)})
+
 
 # ✅ SHAP heatmap: channels × time
 def plot_shap_heatmap(shap_values, index=0, output_path="shap_heatmap.png", log_to_wandb=False):
