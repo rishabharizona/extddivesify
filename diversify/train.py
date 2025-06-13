@@ -123,27 +123,26 @@ def main(args):
 
     if args.enable_shap:
         print("Running SHAP explainability...")
-        from tqdm import tqdm
-
+        
 # 1. Get full signal for SHAP from entire loader
-full_inputs = []
-for batch in tqdm(valid_loader, desc="Collecting full input for SHAP overlay"):
-    x = batch[0].cpu()
-    full_inputs.append(x)
+        full_inputs = []
+        for batch in tqdm(valid_loader, desc="Collecting full input for SHAP overlay"):
+            x = batch[0].cpu()
+            full_inputs.append(x)
 
-full_inputs = torch.cat(full_inputs, dim=0)  # shape: (N, C, T)
-flat_signal = full_inputs.reshape(-1)
+        full_inputs = torch.cat(full_inputs, dim=0)  # shape: (N, C, T)
+        flat_signal = full_inputs.reshape(-1)
 
 # 2. Use background from initial samples
-background = full_inputs[:64].to('cuda')
-shap_explainer = get_shap_explainer(algorithm, background)
+        background = full_inputs[:64].to('cuda')
+        shap_explainer = get_shap_explainer(algorithm, background)
 
 # 3. Compute SHAP for entire full_inputs
-shap_vals = compute_shap_values(shap_explainer, full_inputs.to('cuda'))
-shap_array = _get_shap_array(shap_vals).reshape(-1)
+        shap_vals = compute_shap_values(shap_explainer, full_inputs.to('cuda'))
+        shap_array = _get_shap_array(shap_vals).reshape(-1)
 
 # 4. Save long overlay
-overlay_signal_with_shap(flat_signal.numpy(), shap_array, output_path="shap_overlay_full.png")
+        overlay_signal_with_shap(flat_signal.numpy(), shap_array, output_path="shap_overlay_full.png")
 
 
         base_preds, masked_preds, acc_drop = evaluate_shap_impact(algorithm, X_eval, shap_vals, top_k=10)
