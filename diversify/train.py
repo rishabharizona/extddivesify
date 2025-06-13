@@ -4,6 +4,7 @@
 import time
 import matplotlib.pyplot as plt
 import pandas as pd
+from tqdm import tqdm
 from alg.opt import *
 from alg import alg, modelopera
 from utils.util import set_random_seed, get_args, print_row, print_args, train_valid_target_eval_names, alg_loss_dict, print_environ
@@ -122,16 +123,28 @@ def main(args):
 
     if args.enable_shap:
         print("Running SHAP explainability...")
-        background = get_background_batch(valid_loader, size=64).to('cuda')
-        X_eval = background[:10]
+        from tqdm import tqdm
 
-        shap_explainer = get_shap_explainer(algorithm, background)
-        shap_vals = compute_shap_values(shap_explainer, X_eval)
-        shap_array = _get_shap_array(shap_vals)
+# 1. Get full signal for SHAP from entire loader
+full_inputs = []
+for batch in tqdm(valid_loader, desc="Collecting full input for SHAP overlay"):
+    x = batch[0].cpu()
+    full_inputs.append(x)
 
-        plot_summary(shap_vals, X_eval.cpu().numpy(), output_path="shap_summary.png")
-        plot_force(shap_explainer, shap_vals, X_eval.cpu().numpy(), index=0, output_path="shap_force.html")
-        overlay_signal_with_shap(X_eval[0].cpu().numpy(), shap_array[0], output_path="shap_overlay_sample0.png")
+full_inputs = torch.cat(full_inputs, dim=0)  # shape: (N, C, T)
+flat_signal = full_inputs.reshape(-1)
+
+# 2. Use background from initial samples
+background = full_inputs[:64].to('cuda')
+shap_explainer = get_shap_explainer(algorithm, background)
+
+# 3. Compute SHAP for entire full_inputs
+shap_vals = compute_shap_values(shap_explainer, full_inputs.to('cuda'))
+shap_array = _get_shap_array(shap_vals).reshape(-1)
+
+# 4. Save long overlay
+overlay_signal_with_shap(flat_signal.numpy(), shap_array, output_path="shap_overlay_full.png")
+
 
         base_preds, masked_preds, acc_drop = evaluate_shap_impact(algorithm, X_eval, shap_vals, top_k=10)
         print(f"[SHAP] Perturbation-based accuracy drop: {acc_drop:.4f}")
