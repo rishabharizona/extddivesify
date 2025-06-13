@@ -4,7 +4,6 @@
 import time
 import matplotlib.pyplot as plt
 import pandas as pd
-from tqdm import tqdm
 from alg.opt import *
 from alg import alg, modelopera
 from utils.util import set_random_seed, get_args, print_row, print_args, train_valid_target_eval_names, alg_loss_dict, print_environ
@@ -31,6 +30,7 @@ from shap_utils_extended import (
     compute_feature_coherence,
     compute_shap_entropy
 )
+from tqdm import tqdm
 
 def main(args):
     s = print_args(args, [])
@@ -39,23 +39,16 @@ def main(args):
     print_environ()
     print(s)
     if args.latent_domain_num < 6:
-        args.batch_size = 32*args.latent_domain_num
+        args.batch_size = 32 * args.latent_domain_num
     else:
-        args.batch_size = 16*args.latent_domain_num
+        args.batch_size = 16 * args.latent_domain_num
 
     train_loader, train_loader_noshuffle, valid_loader, target_loader, _, _, _ = get_act_dataloader(args)
 
     best_valid_acc, target_acc = 0, 0
-    logs = {
-        'epoch': [],
-        'class_loss': [],
-        'dis_loss': [],
-        'total_loss': [],
-        'train_acc': [],
-        'valid_acc': [],
-        'target_acc': [],
-        'total_cost_time': []
-    }
+    logs = {key: [] for key in [
+        'epoch', 'class_loss', 'dis_loss', 'total_loss',
+        'train_acc', 'valid_acc', 'target_acc', 'total_cost_time']}
 
     algorithm_class = alg.get_algorithm_class(args.algorithm)
     algorithm = algorithm_class(args).cuda()
@@ -68,21 +61,21 @@ def main(args):
         print(f'\n========ROUND {round}========')
         print('====Feature update====')
         loss_list = ['class']
-        print_row(['epoch']+[item+'_loss' for item in loss_list], colwidth=15)
+        print_row(['epoch'] + [item + '_loss' for item in loss_list], colwidth=15)
 
         for step in range(args.local_epoch):
             for data in train_loader:
                 loss_result_dict = algorithm.update_a(data, opta)
-            print_row([step]+[loss_result_dict[item] for item in loss_list], colwidth=15)
+            print_row([step] + [loss_result_dict[item] for item in loss_list], colwidth=15)
 
         print('====Latent domain characterization====')
         loss_list = ['total', 'dis', 'ent']
-        print_row(['epoch']+[item+'_loss' for item in loss_list], colwidth=15)
+        print_row(['epoch'] + [item + '_loss' for item in loss_list], colwidth=15)
 
         for step in range(args.local_epoch):
             for data in train_loader:
                 loss_result_dict = algorithm.update_d(data, optd)
-            print_row([step]+[loss_result_dict[item] for item in loss_list], colwidth=15)
+            print_row([step] + [loss_result_dict[item] for item in loss_list], colwidth=15)
 
         algorithm.set_dlabel(train_loader)
 
@@ -90,8 +83,8 @@ def main(args):
         loss_list = alg_loss_dict(args)
         eval_dict = train_valid_target_eval_names(args)
         print_key = ['epoch']
-        print_key.extend([item+'_loss' for item in loss_list])
-        print_key.extend([item+'_acc' for item in eval_dict.keys()])
+        print_key.extend([item + '_loss' for item in loss_list])
+        print_key.extend([item + '_acc' for item in eval_dict.keys()])
         print_key.append('total_cost_time')
         print_row(print_key, colwidth=15)
 
@@ -108,7 +101,7 @@ def main(args):
                 'total_cost_time': time.time() - sss
             }
             for key in loss_list:
-                results[key+'_loss'] = step_vals[key]
+                results[key + '_loss'] = step_vals[key]
 
             for key in logs:
                 logs[key].append(results.get(key, 0))
@@ -123,27 +116,27 @@ def main(args):
 
     if args.enable_shap:
         print("Running SHAP explainability...")
-        
-# 1. Get full signal for SHAP from entire loader
+        background = get_background_batch(valid_loader, size=64).to('cuda')
+        X_eval = background[:10]  # Use for SHAP metrics
+
+        shap_explainer = get_shap_explainer(algorithm, background)
+        shap_vals = compute_shap_values(shap_explainer, X_eval)
+        shap_array = _get_shap_array(shap_vals)
+
+        plot_summary(shap_vals, X_eval.cpu().numpy(), output_path="shap_summary.png")
+        plot_force(shap_explainer, shap_vals, X_eval.cpu().numpy(), index=0, output_path="shap_force.html")
+
+        # Full signal overlay
         full_inputs = []
         for batch in tqdm(valid_loader, desc="Collecting full input for SHAP overlay"):
-            x = batch[0].cpu()
-            full_inputs.append(x)
-
-        full_inputs = torch.cat(full_inputs, dim=0)  # shape: (N, C, T)
+            full_inputs.append(batch[0].cpu())
+        full_inputs = torch.cat(full_inputs, dim=0)
         flat_signal = full_inputs.reshape(-1)
 
-# 2. Use background from initial samples
-        background = full_inputs[:64].to('cuda')
-        shap_explainer = get_shap_explainer(algorithm, background)
+        full_shap_vals = compute_shap_values(shap_explainer, full_inputs.to('cuda'))
+        full_shap_array = _get_shap_array(full_shap_vals).reshape(-1)
 
-# 3. Compute SHAP for entire full_inputs
-        shap_vals = compute_shap_values(shap_explainer, full_inputs.to('cuda'))
-        shap_array = _get_shap_array(shap_vals).reshape(-1)
-
-# 4. Save long overlay
-        overlay_signal_with_shap(flat_signal.numpy(), shap_array, output_path="shap_overlay_full.png")
-
+        overlay_signal_with_shap(flat_signal.numpy(), full_shap_array, output_path="shap_overlay_full.png")
 
         base_preds, masked_preds, acc_drop = evaluate_shap_impact(algorithm, X_eval, shap_vals, top_k=10)
         print(f"[SHAP] Perturbation-based accuracy drop: {acc_drop:.4f}")
@@ -173,7 +166,7 @@ def main(args):
         coherence = compute_feature_coherence(shap_array)
         print(f"[SHAP] Feature Coherence Score: {coherence:.4f}")
 
-    # Final training curve plot
+    # Plotting training curves
     plt.figure(figsize=(12, 8))
     plt.subplot(2, 1, 1)
     plt.plot(logs['epoch'], logs['class_loss'], label="Class Loss", marker='o')
