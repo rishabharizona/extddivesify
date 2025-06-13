@@ -70,6 +70,10 @@ def plot_force(explainer, shap_values, inputs, index=0, output_path="shap_force.
 
 # ✅ Overlay SHAP importance on signal
 def overlay_signal_with_shap(signal, shap_val, output_path="shap_overlay.png", log_to_wandb=False):
+    min_len = min(len(signal), len(shap_val))
+    signal = signal[:min_len]
+    shap_val = shap_val[:min_len]
+
     signal = signal.reshape(-1)
     shap_val = shap_val.reshape(-1)
 
