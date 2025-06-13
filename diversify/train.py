@@ -8,6 +8,7 @@ from alg.opt import *
 from alg import alg, modelopera
 from utils.util import set_random_seed, get_args, print_row, print_args, train_valid_target_eval_names, alg_loss_dict, print_environ
 from datautil.getdataloader_single import get_act_dataloader
+
 from shap_utils import (
     get_shap_explainer,
     compute_shap_values,
@@ -30,26 +31,35 @@ from shap_utils_extended import (
     compute_feature_coherence,
     compute_shap_entropy
 )
-from tqdm import tqdm
 
 def main(args):
     s = print_args(args, [])
     set_random_seed(args.seed)
-
     print_environ()
     print(s)
+
     if args.latent_domain_num < 6:
         args.batch_size = 32 * args.latent_domain_num
     else:
         args.batch_size = 16 * args.latent_domain_num
 
+    # Load data
     train_loader, train_loader_noshuffle, valid_loader, target_loader, _, _, _ = get_act_dataloader(args)
 
+    # Init
     best_valid_acc, target_acc = 0, 0
-    logs = {key: [] for key in [
-        'epoch', 'class_loss', 'dis_loss', 'total_loss',
-        'train_acc', 'valid_acc', 'target_acc', 'total_cost_time']}
+    logs = {
+        'epoch': [],
+        'class_loss': [],
+        'dis_loss': [],
+        'total_loss': [],
+        'train_acc': [],
+        'valid_acc': [],
+        'target_acc': [],
+        'total_cost_time': []
+    }
 
+    # Load algorithm
     algorithm_class = alg.get_algorithm_class(args.algorithm)
     algorithm = algorithm_class(args).cuda()
     algorithm.train()
@@ -57,35 +67,36 @@ def main(args):
     opt = get_optimizer(algorithm, args, nettype='Diversify-cls')
     opta = get_optimizer(algorithm, args, nettype='Diversify-all')
 
+    # Training loop
     for round in range(args.max_epoch):
-        print(f'\n========ROUND {round}========')
-        print('====Feature update====')
+        print(f'\n======== ROUND {round} ========')
+
+        # Step 1: Feature update
+        print('==== Feature update ====')
         loss_list = ['class']
         print_row(['epoch'] + [item + '_loss' for item in loss_list], colwidth=15)
-
         for step in range(args.local_epoch):
             for data in train_loader:
                 loss_result_dict = algorithm.update_a(data, opta)
             print_row([step] + [loss_result_dict[item] for item in loss_list], colwidth=15)
 
-        print('====Latent domain characterization====')
+        # Step 2: Latent domain
+        print('==== Latent domain characterization ====')
         loss_list = ['total', 'dis', 'ent']
         print_row(['epoch'] + [item + '_loss' for item in loss_list], colwidth=15)
-
         for step in range(args.local_epoch):
             for data in train_loader:
                 loss_result_dict = algorithm.update_d(data, optd)
             print_row([step] + [loss_result_dict[item] for item in loss_list], colwidth=15)
 
+        # Set pseudo domain labels
         algorithm.set_dlabel(train_loader)
 
-        print('====Domain-invariant feature learning====')
+        # Step 3: Main update
+        print('==== Domain-invariant feature learning ====')
         loss_list = alg_loss_dict(args)
         eval_dict = train_valid_target_eval_names(args)
-        print_key = ['epoch']
-        print_key.extend([item + '_loss' for item in loss_list])
-        print_key.extend([item + '_acc' for item in eval_dict.keys()])
-        print_key.append('total_cost_time')
+        print_key = ['epoch'] + [item + '_loss' for item in loss_list] + [item + '_acc' for item in eval_dict.keys()] + ['total_cost_time']
         print_row(print_key, colwidth=15)
 
         sss = time.time()
@@ -112,61 +123,50 @@ def main(args):
 
             print_row([results[key] for key in print_key], colwidth=15)
 
-    print(f'Target acc: {target_acc:.4f}')
+    print(f'🎯 Final Target Accuracy: {target_acc:.4f}')
 
+    # ==== SHAP EXPLAINABILITY BLOCK ====
     if args.enable_shap:
-        print("Running SHAP explainability...")
+        print("📊 Running SHAP explainability...")
+
         background = get_background_batch(valid_loader, size=64).to('cuda')
-        X_eval = background[:10]  # Use for SHAP metrics
+        X_eval = background[:10]
 
         shap_explainer = get_shap_explainer(algorithm, background)
         shap_vals = compute_shap_values(shap_explainer, X_eval)
         shap_array = _get_shap_array(shap_vals)
 
+        # Plots
         plot_summary(shap_vals, X_eval.cpu().numpy(), output_path="shap_summary.png")
         plot_force(shap_explainer, shap_vals, X_eval.cpu().numpy(), index=0, output_path="shap_force.html")
+        overlay_signal_with_shap(X_eval[0].cpu().numpy(), shap_array[0], output_path="shap_overlay_sample0.png")
 
-        # Full signal overlay
-        full_inputs = []
-        for batch in tqdm(valid_loader, desc="Collecting full input for SHAP overlay"):
-            full_inputs.append(batch[0].cpu())
-        full_inputs = torch.cat(full_inputs, dim=0)
-        flat_signal = full_inputs.reshape(-1)
-
-        full_shap_vals = compute_shap_values(shap_explainer, full_inputs.to('cuda'))
-        full_shap_array = _get_shap_array(full_shap_vals).reshape(-1)
-
-        overlay_signal_with_shap(flat_signal.numpy(), full_shap_array, output_path="shap_overlay_full.png")
-
+        # Evaluation metrics
         base_preds, masked_preds, acc_drop = evaluate_shap_impact(algorithm, X_eval, shap_vals, top_k=10)
-        print(f"[SHAP] Perturbation-based accuracy drop: {acc_drop:.4f}")
-
+        print(f"[SHAP] Perturbation-based Accuracy Drop: {acc_drop:.4f}")
         log_shap_numpy(shap_vals, save_path="shap_values.npy")
 
         if len(shap_array) > 1:
             jaccard = compute_jaccard_topk(shap_array[0], shap_array[1], k=10)
             tau = compute_kendall_tau(shap_array[0], shap_array[1])
             cos_sim = cosine_similarity_shap(shap_array[0], shap_array[1])
-            print(f"[SHAP] Jaccard similarity (top-10): {jaccard:.4f}")
+            print(f"[SHAP] Jaccard Similarity (Top-10): {jaccard:.4f}")
             print(f"[SHAP] Kendall’s Tau: {tau:.4f}")
             print(f"[SHAP] Cosine Similarity: {cos_sim:.4f}")
 
         flip_rate = compute_flip_rate(base_preds, masked_preds)
-        print(f"[SHAP] Flip Rate: {flip_rate:.4f}")
-
         conf_delta = compute_confidence_change(base_preds, masked_preds)
-        print(f"[SHAP] Confidence Change: {conf_delta:.4f}")
-
         aopc = compute_aopc(algorithm, X_eval, shap_vals, evaluate_shap_impact)
-        print(f"[SHAP] AOPC (Area over Perturbation Curve): {aopc:.4f}")
-
         entropy = compute_shap_entropy(shap_array)
-        print(f"[SHAP] Entropy of SHAP Distribution: {entropy:.4f}")
-
         coherence = compute_feature_coherence(shap_array)
-        print(f"[SHAP] Feature Coherence Score: {coherence:.4f}")
 
-    # Plotting training curves
+        print(f"[SHAP] Flip Rate: {flip_rate:.4f}")
+        print(f"[SHAP] Confidence Change: {conf_delta:.4f}")
+        print(f"[SHAP] AOPC: {aopc:.4f}")
+        print(f"[SHAP] Entropy: {entropy:.4f}")
+        print(f"[SHAP] Feature Coherence: {coherence:.4f}")
+
+    # ==== Final Training Curves ====
     plt.figure(figsize=(12, 8))
     plt.subplot(2, 1, 1)
     plt.plot(logs['epoch'], logs['class_loss'], label="Class Loss", marker='o')
