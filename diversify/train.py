@@ -9,11 +9,35 @@ from alg import alg, modelopera
 from utils.util import set_random_seed, get_args, print_row, print_args, train_valid_target_eval_names, alg_loss_dict, print_environ
 from datautil.getdataloader_single import get_act_dataloader
 
-from shap_utils import *
-from shap_utils_extended import *
+from shap_utils import (
+    get_shap_explainer,
+    compute_shap_values,
+    _get_shap_array,
+    plot_summary,
+    plot_force,
+    evaluate_shap_impact,
+    plot_shap_heatmap,
+    get_background_batch,
+    compute_jaccard_topk,
+    compute_kendall_tau,
+    cosine_similarity_shap,
+    log_shap_numpy,
+    overlay_signal_with_shap
+)
+from shap_utils_extended import (
+    compute_flip_rate,
+    compute_confidence_change,
+    compute_aopc,
+    compute_feature_coherence,
+    compute_shap_entropy
+)
 from shap4D import (
     plot_emg_shap_4d,
-    evaluate_advanced_shap_metrics
+    compute_shap_channel_variance,
+    compute_shap_temporal_entropy,
+    compare_top_k_channels,
+    compute_mutual_info,
+    compute_pca_alignment
 )
 
 def main(args):
@@ -114,10 +138,12 @@ def main(args):
             print(f"[SHAP] Cosine Sim: {cosine_similarity_shap(shap_array[0], shap_array[1]):.4f}")
 
         # 🔬 4D-specific visualization and metrics
-        plot_emg_shap_4d(X_eval, shap_array, sample_id=0)
-        metrics = evaluate_advanced_shap_metrics(shap_array, X_eval.cpu().numpy())
-        for k, v in metrics.items():
-            print(f"[SHAP4D] {k}: {v:.4f}")
+        plot_emg_shap_4d(X_eval, shap_array)
+
+        print(f"[SHAP4D] Channel Variance: {compute_shap_channel_variance(shap_array):.4f}")
+        print(f"[SHAP4D] Temporal Entropy: {compute_shap_temporal_entropy(shap_array):.4f}")
+        print(f"[SHAP4D] Mutual Info: {compute_mutual_info(X_eval[0].cpu().numpy(), shap_array[0]):.4f}")
+        print(f"[SHAP4D] PCA Alignment: {compute_pca_alignment(shap_array):.4f}")
 
     plt.figure(figsize=(12, 8))
     plt.subplot(2, 1, 1)
