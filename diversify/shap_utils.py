@@ -97,20 +97,29 @@ def overlay_signal_with_shap(signal, shap_val, output_path="shap_overlay.png", l
 
 # ✅ SHAP heatmap: channels × time
 def plot_shap_heatmap(shap_values, output_path="shap_heatmap.png", log_to_wandb=False):
+    import numpy as np
+    import seaborn as sns
+    import matplotlib.pyplot as plt
+
     # Handle both SHAP Explanation objects and raw NumPy arrays
     if hasattr(shap_values, "values"):
         shap_array = shap_values.values
     else:
         shap_array = shap_values  # Already a NumPy array
 
-    # Aggregate across samples and aux dimension → (channels, time)
-    shap_mean = shap_array.mean(axis=0).mean(axis=-1)
+    # Safety: Convert to NumPy and ensure float32/float64 dtype
+    shap_array = np.array(shap_array, dtype=np.float32)
 
-    import seaborn as sns
-    import matplotlib.pyplot as plt
+    # Reduce across samples and aux dimension → (channels, time)
+    while shap_array.ndim > 2:
+        shap_array = shap_array.mean(axis=0)
+
+    # Ensure 2D: Now shap_array should be (channels, time)
+    if shap_array.ndim != 2:
+        raise ValueError(f"[plot_shap_heatmap] Expected 2D after reduction, got {shap_array.shape}")
 
     plt.figure(figsize=(10, 6))
-    sns.heatmap(shap_mean, cmap="coolwarm", cbar_kws={'label': 'SHAP Value'})
+    sns.heatmap(shap_array, cmap="coolwarm", cbar_kws={'label': 'SHAP Value'})
     plt.title("SHAP Heatmap (Mean across Samples & Aux)")
     plt.xlabel("Time")
     plt.ylabel("Channel")
@@ -119,9 +128,10 @@ def plot_shap_heatmap(shap_values, output_path="shap_heatmap.png", log_to_wandb=
     plt.close()
     print(f"[INFO] Saved SHAP heatmap to: {output_path}")
 
-
     if log_to_wandb:
+        import wandb
         wandb.log({"SHAP Heatmap": wandb.Image(output_path)})
+
 
 # ✅ Mask most influential inputs and evaluate impact
 def evaluate_shap_impact(model, inputs, shap_values, top_k=10):
