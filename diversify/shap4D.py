@@ -89,6 +89,8 @@ def compute_shap_channel_variance(shap_array):
     """Returns single scalar mean variance across all channels and samples."""
     return shap_array.var(axis=2).mean()  # mean over samples, channels, and time
 
+
+shap_array_reshaped = shap_array.reshape(shap_array.shape[0], -1, shap_array.shape[2])
 def compute_shap_temporal_entropy(shap_array):
     """Entropy over time for each channel's SHAP distribution."""
     n_samples, n_channels, n_time = shap_array.shape
