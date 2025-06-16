@@ -58,13 +58,18 @@ def plot_emg_shap_4d(signal, shap_val, sample_id=0, title="4D EMG SHAP Visualiza
 # ==============================
 def plot_4d_shap_surface(shap_values, output_path="shap_4d_surface.html", title="4D SHAP Visualization"):
     if isinstance(shap_values, list):
-        shap_array = shap_values[0].values
+        shap_array = shap_values[0].values  # (N, C, T, A)
     else:
-        shap_array = shap_values.values
+        shap_array = shap_values.values     # (N, C, T, A)
 
-    sample = shap_array[0]  # shape: (channels, time, aux) or similar
+    sample = shap_array[0]  # shape: (C, T, A) or (1, T, A)
+
+    # Handle shape like (1, T, A), (C, T, A), or (C, 1, T, A)
+    if sample.ndim == 4:
+        # Case: (C, 1, T, A) or (1, T, A, ?)
+        sample = sample.squeeze()  # get to (C, T, A)
     if sample.ndim == 3:
-        sample = sample.mean(axis=-1)  # → (channels, time)
+        sample = sample.mean(axis=-1)  # Reduce over aux → (C, T)
     elif sample.ndim != 2:
         raise ValueError(f"[plot_4d_shap_surface] Expected shape (channels, time), got {sample.shape}")
 
@@ -85,6 +90,7 @@ def plot_4d_shap_surface(shap_values, output_path="shap_4d_surface.html", title=
     )
     fig.write_html(output_path)
     print(f"[INFO] Saved 4D SHAP surface plot to: {output_path}")
+
 
 
 # ===========================
