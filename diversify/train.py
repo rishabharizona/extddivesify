@@ -168,7 +168,7 @@ def main(args):
             x, y = data[0].cuda(), data[1]
             preds = algorithm.predict(x).cpu()
             true_labels.extend(y.cpu().numpy())
-            pred_labels.extend(preds.numpy())
+            pred_labels.extend(preds.detach().cpu().numpy())
 
         cm = confusion_matrix(true_labels, pred_labels)
         disp = ConfusionMatrixDisplay(confusion_matrix=cm)
