@@ -147,8 +147,9 @@ def main(args):
         signal_sample = X_eval[0].cpu().numpy()                     # shape: (8,1,200)
         shap_sample = shap_array[0].mean(axis=-1)                   # reduce (8,1,200,6) → (8,1,200)
         print(f"[SHAP4D] Mutual Info: {compute_mutual_info(signal_sample, shap_sample):.4f}")
-        shap_array_reduced = shap_array.mean(axis=-1)  # from (B, C, T, F) → (B, C, T)
-        print(f"[SHAP4D] PCA Alignment: {compute_pca_alignment(shap_array):.4f}")
+        shap_array_reduced = shap_array.mean(axis=-1)
+        print(f"[SHAP4D] PCA Alignment: {compute_pca_alignment(shap_array_reduced):.4f}")
+
 
     plt.figure(figsize=(12, 8))
     plt.subplot(2, 1, 1)
