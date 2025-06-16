@@ -16,16 +16,26 @@ def plot_emg_shap_4d(signal, shap_val, sample_id=0, title="4D EMG SHAP Visualiza
     signal = signal[sample_id].detach().cpu().numpy()
     shap_val = shap_val[sample_id]
 
-    n_channels, _, n_time = signal.shape
-    signal = signal.reshape(n_channels, n_time)
-    shap_val = shap_val.reshape(n_channels, n_time)
+    print(f"Signal shape before reshape: {signal.shape}")
+    print(f"SHAP value shape before reshape: {shap_val.shape}")
 
+    # If signal shape is (channels, 1, time)
+    n_channels, n_aux, n_time = signal.shape
+    signal = signal.reshape(n_channels, n_aux * n_time)
+    shap_val = shap_val.reshape(n_channels, n_aux * n_time)
+
+    # If n_aux = 1, you can squeeze to (channels, time)
+    if n_aux == 1:
+        signal = signal.squeeze(axis=1)
+        shap_val = shap_val.squeeze(axis=1)
+
+    # Now create data dictionary for plotting
     data = {
         "Time": [], "Channel": [], "Signal": [], "SHAP": []
     }
 
     for c in range(n_channels):
-        for t in range(n_time):
+        for t in range(signal.shape[1]):
             data["Time"].append(t)
             data["Channel"].append(f"C{c}")
             data["Signal"].append(signal[c, t])
@@ -41,6 +51,7 @@ def plot_emg_shap_4d(signal, shap_val, sample_id=0, title="4D EMG SHAP Visualiza
     )
     fig.update_traces(marker=dict(size=3))
     fig.show()
+
 
 # ==============================
 # 🌐 4D SHAP Surface Plot
