@@ -4,6 +4,8 @@
 import time
 import matplotlib.pyplot as plt
 import pandas as pd
+from sklearn.metrics import confusion_matrix, ConfusionMatrixDisplay
+import numpy as np
 from alg.opt import *
 from alg import alg, modelopera
 from utils.util import set_random_seed, get_args, print_row, print_args, train_valid_target_eval_names, alg_loss_dict, print_environ
@@ -37,7 +39,8 @@ from shap4D import (
     compute_shap_temporal_entropy,
     compare_top_k_channels,
     compute_mutual_info,
-    compute_pca_alignment
+    compute_pca_alignment,
+    plot_4d_shap_surface
 )
 import plotly.io as pio
 pio.renderers.default = 'colab'  # Or use 'notebook' if you're not on Colab
@@ -160,7 +163,29 @@ def main(args):
         print(f"[SHAP4D] Mutual Info: {compute_mutual_info(signal_sample, shap_sample):.4f}")
         shap_array_reduced = shap_array.mean(axis=-1)
         print(f"[SHAP4D] PCA Alignment: {compute_pca_alignment(shap_array_reduced):.4f}")
+        true_labels = algorithm.get_labels(valid_loader)
+        pred_labels = algorithm.predict(valid_loader)
+        ConfusionMatrixDisplay.from_predictions(true_labels, pred_labels)
+        plt.savefig("confusion_matrix.png")
 
+        plot_shap_heatmap(shap_array, output_path="shap_temporal_heatmap.png")
+
+        print("\n📊 Training baseline model for SHAP comparison...")
+        baseline_model = algorithm_class(args).cuda()
+        baseline_model.eval()
+        baseline_shap_explainer = get_shap_explainer(baseline_model, background)
+        baseline_shap_vals = compute_shap_values(baseline_shap_explainer, X_eval)
+        baseline_shap_array = _get_shap_array(baseline_shap_vals)
+        plot_shap_heatmap(baseline_shap_array, output_path="shap_heatmap_baseline.png")
+
+        print("\n🔍 Running ablation: shuffling SHAP-important segments...")
+        X_ablation = X_eval.clone()
+        shap_mask = torch.from_numpy(np.abs(shap_array[0].mean(axis=0))).topk(100, largest=True).indices
+        X_ablation[0, :, :, shap_mask] = X_ablation[0, :, :, torch.randperm(shap_mask.shape[0])]
+        post_ablation_preds = algorithm.predict(X_ablation)
+        print(f"[Ablation] Accuracy post SHAP shuffle: {np.mean(post_ablation_preds == base_preds):.4f}")
+
+        print("\n🛠 Real-world Context: EMG classification can support gesture-based interfaces in prosthetics or rehabilitation systems, and insights from SHAP improve trust in deployed models.")
 
     plt.figure(figsize=(12, 8))
     plt.subplot(2, 1, 1)
