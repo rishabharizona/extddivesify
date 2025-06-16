@@ -188,40 +188,34 @@ def main(args):
         plot_shap_heatmap(baseline_shap_array, output_path="shap_heatmap_baseline.png")
 
         print("\n🔍 Running ablation: shuffling SHAP-important segments...")
-
+        
         X_ablation = X_eval.clone()
         
-        # Step 1: Get SHAP importance for one sample (assumed shape: (channels, time))
-        shap_sample = shap_array[0]  # shape: (C, T)
-        if shap_sample.ndim > 2:
-            shap_sample = shap_sample.mean(axis=0)  # (T,) or (C, T)
+        # Step 1: Extract SHAP sample
+        shap_sample = shap_array[0]  # (1, 200, 6)
         
-        # Step 2: Reduce to 1D importance per time step
-        if shap_sample.ndim == 2:
-            shap_scores = torch.from_numpy(np.abs(shap_sample).mean(axis=0))  # (T,)
-        elif shap_sample.ndim == 1:
-            shap_scores = torch.from_numpy(np.abs(shap_sample))  # already (T,)
-        else:
-            raise ValueError(f"Unexpected SHAP sample shape: {shap_sample.shape}")
+        # Step 2: Reduce to 1D SHAP importance per time step
+        shap_scores = torch.from_numpy(np.abs(shap_sample).mean(axis=(0, 2)))  # shape: (200,)
         
-        # Step 3: Dynamic top-k
+        # Step 3: Safe top-k selection
         topk = min(100, shap_scores.numel())
         if topk == 0:
             print("[SKIP] SHAP ablation: not enough time steps for top-k selection.")
         else:
             shap_mask = shap_scores.topk(topk, largest=True).indices
         
-            # Step 4: Apply shuffle at important time indices
+            # Step 4: Apply time-step shuffle for selected top-k
             original = X_ablation[0, :, :, shap_mask].clone()
             perm = shap_mask[torch.randperm(len(shap_mask))]
             X_ablation[0, :, :, shap_mask] = X_ablation[0, :, :, perm]
         
-            # Step 5: Evaluate effect of ablation
+            # Step 5: Evaluate accuracy after ablation
             post_preds = algorithm.predict(X_ablation)
             post_labels = torch.argmax(post_preds, dim=1).cpu().numpy()
             original_labels = torch.argmax(base_preds, axis=1)
         
             print(f"[Ablation] Accuracy post SHAP shuffle: {(post_labels == original_labels).mean():.4f}")
+
 
 
 
