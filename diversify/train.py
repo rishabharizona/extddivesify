@@ -39,6 +39,8 @@ from shap4D import (
     compute_mutual_info,
     compute_pca_alignment
 )
+import plotly.io as pio
+pio.renderers.default = 'colab'  # Or use 'notebook' if you're not on Colab
 
 def main(args):
     s = print_args(args, [])
@@ -138,7 +140,14 @@ def main(args):
             print(f"[SHAP] Cosine Sim: {cosine_similarity_shap(shap_array[0], shap_array[1]):.4f}")
 
         # 🔬 4D-specific visualization and metrics
-        plot_emg_shap_4d(X_eval, shap_array)
+        # ---- Plot EMG SHAP 4D ----
+        try:
+            plot_emg_shap_4d(X_eval, shap_array)
+        except Exception as e:
+            print(f"[WARNING] plot_emg_shap_4d failed to render: {e}")
+            from shap4D import plot_4d_shap_surface
+            plot_4d_shap_surface(shap_vals, output_path="fallback_shap_4d_surface.html")
+
         # Reshape SHAP array from (samples, 1, time, aux) to (samples, channels, time)
         shap_array_reshaped = shap_array.reshape(shap_array.shape[0], -1, shap_array.shape[2])
 
