@@ -96,21 +96,29 @@ def overlay_signal_with_shap(signal, shap_val, output_path="shap_overlay.png", l
 
 
 # ✅ SHAP heatmap: channels × time
-def plot_shap_heatmap(shap_values, index=0, output_path="shap_heatmap.png", log_to_wandb=False):
-    shap_array = _get_shap_array(shap_values)
-    instance = shap_array[index]
+def plot_shap_heatmap(shap_values, output_path="shap_heatmap.png", log_to_wandb=False):
+    # Handle both SHAP Explanation objects and raw NumPy arrays
+    if hasattr(shap_values, "values"):
+        shap_array = shap_values.values
+    else:
+        shap_array = shap_values  # Already a NumPy array
 
-    if instance.ndim > 2:
-        instance = instance.reshape(instance.shape[0], -1)  # e.g. (channels, time)
+    # Average across samples (axis=0), squeeze to (channels, time)
+    shap_mean = np.mean(shap_array, axis=0).squeeze()
 
-    plt.figure(figsize=(12, 6))
-    sns.heatmap(instance, cmap="coolwarm", center=0)
-    plt.title(f"SHAP Heatmap (Instance {index})")
-    plt.xlabel("Time Steps")
-    plt.ylabel("Channels")
+    import seaborn as sns
+    import matplotlib.pyplot as plt
+
+    plt.figure(figsize=(10, 6))
+    sns.heatmap(shap_mean, cmap="coolwarm", cbar_kws={'label': 'SHAP Value'})
+    plt.title("SHAP Heatmap (Mean across Samples)")
+    plt.xlabel("Time")
+    plt.ylabel("Channel")
     plt.tight_layout()
     plt.savefig(output_path, dpi=300)
     plt.close()
+    print(f"[INFO] Saved SHAP heatmap to: {output_path}")
+
 
     if log_to_wandb:
         wandb.log({"SHAP Heatmap": wandb.Image(output_path)})
