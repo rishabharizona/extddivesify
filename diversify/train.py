@@ -189,10 +189,19 @@ def main(args):
 
         print("\n🔍 Running ablation: shuffling SHAP-important segments...")
         X_ablation = X_eval.clone()
-        shap_mask = torch.from_numpy(np.abs(shap_array[0].mean(axis=0))).topk(100, largest=True).indices
-        X_ablation[0, :, :, shap_mask] = X_ablation[0, :, :, torch.randperm(shap_mask.shape[0])]
+
+        shap_scores = torch.from_numpy(np.abs(shap_array[0].mean(axis=0)))  # shape: (time,)
+        topk = min(100, shap_scores.numel())
+        shap_mask = shap_scores.topk(topk, largest=True).indices  # top-k important time indices
+
+        # Shuffle the top-k important time steps
+        X_ablation[0, :, :, shap_mask] = X_ablation[0, :, :, shap_mask[torch.randperm(len(shap_mask))]]
+
         post_ablation_preds = algorithm.predict(X_ablation)
-        print(f"[Ablation] Accuracy post SHAP shuffle: {np.mean(post_ablation_preds == base_preds):.4f}")
+        post_ablation_labels = torch.argmax(post_ablation_preds, dim=1).cpu().numpy()
+        original_labels = torch.argmax(base_preds, axis=1)
+
+        print(f"[Ablation] Accuracy post SHAP shuffle: {(post_ablation_labels == original_labels).mean():.4f}")
 
         print("\n🛠 Real-world Context: EMG classification can support gesture-based interfaces in prosthetics or rehabilitation systems, and insights from SHAP improve trust in deployed models.")
 
