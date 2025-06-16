@@ -103,15 +103,15 @@ def plot_shap_heatmap(shap_values, output_path="shap_heatmap.png", log_to_wandb=
     else:
         shap_array = shap_values  # Already a NumPy array
 
-    # Average across samples (axis=0), squeeze to (channels, time)
-    shap_mean = np.mean(shap_array, axis=0).squeeze()
+    # Aggregate across samples and aux dimension → (channels, time)
+    shap_mean = shap_array.mean(axis=0).mean(axis=-1)
 
     import seaborn as sns
     import matplotlib.pyplot as plt
 
     plt.figure(figsize=(10, 6))
     sns.heatmap(shap_mean, cmap="coolwarm", cbar_kws={'label': 'SHAP Value'})
-    plt.title("SHAP Heatmap (Mean across Samples)")
+    plt.title("SHAP Heatmap (Mean across Samples & Aux)")
     plt.xlabel("Time")
     plt.ylabel("Channel")
     plt.tight_layout()
