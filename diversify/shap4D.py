@@ -1,0 +1,101 @@
+import plotly.express as px
+import plotly.graph_objects as go
+import numpy as np
+import torch
+import matplotlib.pyplot as plt
+import seaborn as sns
+from sklearn.metrics import mutual_info_score
+from scipy.stats import entropy as scipy_entropy, pearsonr
+from scipy.spatial.distance import cosine
+from sklearn.decomposition import PCA
+
+# ==============================
+# 🔍 4D SHAP + Signal Visualizer
+# ==============================
+def plot_emg_shap_4d(signal, shap_val, sample_id=0, title="4D EMG SHAP Visualization"):
+    signal = signal[sample_id].detach().cpu().numpy()
+    shap_val = shap_val[sample_id]
+
+    n_channels, _, n_time = signal.shape
+    signal = signal.reshape(n_channels, n_time)
+    shap_val = shap_val.reshape(n_channels, n_time)
+
+    data = {
+        "Time": [], "Channel": [], "Signal": [], "SHAP": []
+    }
+
+    for c in range(n_channels):
+        for t in range(n_time):
+            data["Time"].append(t)
+            data["Channel"].append(f"C{c}")
+            data["Signal"].append(signal[c, t])
+            data["SHAP"].append(shap_val[c, t])
+
+    fig = px.scatter_3d(
+        data,
+        x="Time", y="Channel", z="Signal",
+        color="SHAP",
+        title=title,
+        labels={"SHAP": "SHAP Importance"},
+        color_continuous_scale="Inferno"
+    )
+    fig.update_traces(marker=dict(size=3))
+    fig.show()
+
+# ===========================
+# 📏 Advanced SHAP Metrics
+# ===========================
+
+def compute_shap_channel_variance(shap_array):
+    """Returns per-channel SHAP variance across time."""
+    return shap_array.var(axis=2).mean(axis=0)  # mean variance over samples
+
+def compute_shap_temporal_entropy(shap_array):
+    """Entropy over time for each channel's SHAP distribution."""
+    n_samples, n_channels, n_time = shap_array.shape
+    entropies = []
+    for c in range(n_channels):
+        flattened = shap_array[:, c, :].flatten()
+        probs, _ = np.histogram(flattened, bins=100, density=True)
+        probs = probs[probs > 0]
+        entropies.append(scipy_entropy(probs))
+    return np.mean(entropies)
+
+def compare_top_k_channels(shap1, shap2, k=5):
+    """Compares top-k channels between two SHAP instances."""
+    shap1_mean = np.abs(shap1).mean(axis=-1)
+    shap2_mean = np.abs(shap2).mean(axis=-1)
+    top1 = set(np.argsort(-shap1_mean)[:k])
+    top2 = set(np.argsort(-shap2_mean)[:k])
+    jaccard = len(top1 & top2) / len(top1 | top2)
+    return jaccard
+
+def compute_mutual_info(signal, shap_array):
+    """Estimates mutual info between signal & SHAP."""
+    signal_flat = signal.flatten()
+    shap_flat = shap_array.flatten()
+    return mutual_info_score(np.digitize(signal_flat, bins=20), np.digitize(shap_flat, bins=20))
+
+def compute_pca_alignment(shap_array):
+    """Measures alignment of SHAP with 1st PC of original signal."""
+    B, C, T = shap_array.shape
+    pca_scores = []
+    for b in range(B):
+        pca = PCA(n_components=1)
+        pc1 = pca.fit_transform(shap_array[b])[:, 0]
+        shap_mean = shap_array[b].mean(axis=0)
+        corr, _ = pearsonr(pc1, shap_mean)
+        pca_scores.append(abs(corr))
+    return np.mean(pca_scores)
+
+# ============================
+# 🧪 Batch Metric Evaluation
+# ============================
+def evaluate_advanced_shap_metrics(shap_array, signal_array):
+    metrics = {
+        "channel_variance": compute_shap_channel_variance(shap_array),
+        "temporal_entropy": compute_shap_temporal_entropy(shap_array),
+        "mutual_info": compute_mutual_info(signal_array, shap_array),
+        "pca_alignment": compute_pca_alignment(shap_array),
+    }
+    return metrics
