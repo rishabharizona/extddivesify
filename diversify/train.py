@@ -9,27 +9,15 @@ from alg import alg, modelopera
 from utils.util import set_random_seed, get_args, print_row, print_args, train_valid_target_eval_names, alg_loss_dict, print_environ
 from datautil.getdataloader_single import get_act_dataloader
 
-from shap_utils import (
-    get_shap_explainer,
-    compute_shap_values,
-    _get_shap_array,
-    plot_summary,
-    plot_force,
-    evaluate_shap_impact,
-    plot_shap_heatmap,
-    get_background_batch,
-    compute_jaccard_topk,
-    compute_kendall_tau,
-    cosine_similarity_shap,
-    log_shap_numpy,
-    overlay_signal_with_shap
-)
-from shap_utils_extended import (
-    compute_flip_rate,
-    compute_confidence_change,
-    compute_aopc,
-    compute_feature_coherence,
-    compute_shap_entropy
+from shap_utils import *
+from shap_utils_extended import *
+from shap4D import (
+    plot_4d_shap_surface,
+    plot_4d_heat_volume,
+    compute_shap_channel_variance,
+    compute_temporal_entropy,
+    compute_mutual_info,
+    compute_shap_pca_alignment
 )
 
 def main(args):
@@ -43,23 +31,11 @@ def main(args):
     else:
         args.batch_size = 16 * args.latent_domain_num
 
-    # Load data
     train_loader, train_loader_noshuffle, valid_loader, target_loader, _, _, _ = get_act_dataloader(args)
 
-    # Init
     best_valid_acc, target_acc = 0, 0
-    logs = {
-        'epoch': [],
-        'class_loss': [],
-        'dis_loss': [],
-        'total_loss': [],
-        'train_acc': [],
-        'valid_acc': [],
-        'target_acc': [],
-        'total_cost_time': []
-    }
+    logs = {k: [] for k in ['epoch', 'class_loss', 'dis_loss', 'total_loss', 'train_acc', 'valid_acc', 'target_acc', 'total_cost_time']}
 
-    # Load algorithm
     algorithm_class = alg.get_algorithm_class(args.algorithm)
     algorithm = algorithm_class(args).cuda()
     algorithm.train()
@@ -67,36 +43,28 @@ def main(args):
     opt = get_optimizer(algorithm, args, nettype='Diversify-cls')
     opta = get_optimizer(algorithm, args, nettype='Diversify-all')
 
-    # Training loop
     for round in range(args.max_epoch):
         print(f'\n======== ROUND {round} ========')
-
-        # Step 1: Feature update
         print('==== Feature update ====')
-        loss_list = ['class']
-        print_row(['epoch'] + [item + '_loss' for item in loss_list], colwidth=15)
+        print_row(['epoch', 'class_loss'], colwidth=15)
         for step in range(args.local_epoch):
             for data in train_loader:
                 loss_result_dict = algorithm.update_a(data, opta)
-            print_row([step] + [loss_result_dict[item] for item in loss_list], colwidth=15)
+            print_row([step, loss_result_dict['class']], colwidth=15)
 
-        # Step 2: Latent domain
         print('==== Latent domain characterization ====')
-        loss_list = ['total', 'dis', 'ent']
-        print_row(['epoch'] + [item + '_loss' for item in loss_list], colwidth=15)
+        print_row(['epoch', 'total_loss', 'dis_loss', 'ent_loss'], colwidth=15)
         for step in range(args.local_epoch):
             for data in train_loader:
                 loss_result_dict = algorithm.update_d(data, optd)
-            print_row([step] + [loss_result_dict[item] for item in loss_list], colwidth=15)
+            print_row([step, loss_result_dict['total'], loss_result_dict['dis'], loss_result_dict['ent']], colwidth=15)
 
-        # Set pseudo domain labels
         algorithm.set_dlabel(train_loader)
 
-        # Step 3: Main update
         print('==== Domain-invariant feature learning ====')
         loss_list = alg_loss_dict(args)
         eval_dict = train_valid_target_eval_names(args)
-        print_key = ['epoch'] + [item + '_loss' for item in loss_list] + [item + '_acc' for item in eval_dict.keys()] + ['total_cost_time']
+        print_key = ['epoch'] + [f"{item}_loss" for item in loss_list] + [f"{item}_acc" for item in eval_dict] + ['total_cost_time']
         print_row(print_key, colwidth=15)
 
         sss = time.time()
@@ -112,61 +80,52 @@ def main(args):
                 'total_cost_time': time.time() - sss
             }
             for key in loss_list:
-                results[key + '_loss'] = step_vals[key]
-
+                results[f"{key}_loss"] = step_vals[key]
             for key in logs:
                 logs[key].append(results.get(key, 0))
-
             if results['valid_acc'] > best_valid_acc:
                 best_valid_acc = results['valid_acc']
                 target_acc = results['target_acc']
+            print_row([results[k] for k in print_key], colwidth=15)
 
-            print_row([results[key] for key in print_key], colwidth=15)
+    print(f'\n🎯 Final Target Accuracy: {target_acc:.4f}')
 
-    print(f'🎯 Final Target Accuracy: {target_acc:.4f}')
-
-    # ==== SHAP EXPLAINABILITY BLOCK ====
     if args.enable_shap:
-        print("📊 Running SHAP explainability...")
-
+        print("\n📊 Running SHAP explainability...")
         background = get_background_batch(valid_loader, size=64).to('cuda')
         X_eval = background[:10]
-
         shap_explainer = get_shap_explainer(algorithm, background)
         shap_vals = compute_shap_values(shap_explainer, X_eval)
         shap_array = _get_shap_array(shap_vals)
 
-        # Plots
-        plot_summary(shap_vals, X_eval.cpu().numpy(), output_path="shap_summary.png")
-        plot_force(shap_explainer, shap_vals, X_eval.cpu().numpy(), index=0, output_path="shap_force.html")
+        plot_summary(shap_vals, X_eval.cpu().numpy())
+        plot_force(shap_explainer, shap_vals, X_eval.cpu().numpy())
         overlay_signal_with_shap(X_eval[0].cpu().numpy(), shap_array[0], output_path="shap_overlay_sample0.png")
 
-        # Evaluation metrics
-        base_preds, masked_preds, acc_drop = evaluate_shap_impact(algorithm, X_eval, shap_vals, top_k=10)
-        print(f"[SHAP] Perturbation-based Accuracy Drop: {acc_drop:.4f}")
-        log_shap_numpy(shap_vals, save_path="shap_values.npy")
+        base_preds, masked_preds, acc_drop = evaluate_shap_impact(algorithm, X_eval, shap_vals)
+        log_shap_numpy(shap_vals)
+
+        print(f"[SHAP] Accuracy Drop: {acc_drop:.4f}")
+        print(f"[SHAP] Flip Rate: {compute_flip_rate(base_preds, masked_preds):.4f}")
+        print(f"[SHAP] Confidence Δ: {compute_confidence_change(base_preds, masked_preds):.4f}")
+        print(f"[SHAP] AOPC: {compute_aopc(algorithm, X_eval, shap_vals, evaluate_shap_impact):.4f}")
+        print(f"[SHAP] Entropy: {compute_shap_entropy(shap_array):.4f}")
+        print(f"[SHAP] Coherence: {compute_feature_coherence(shap_array):.4f}")
 
         if len(shap_array) > 1:
-            jaccard = compute_jaccard_topk(shap_array[0], shap_array[1], k=10)
-            tau = compute_kendall_tau(shap_array[0], shap_array[1])
-            cos_sim = cosine_similarity_shap(shap_array[0], shap_array[1])
-            print(f"[SHAP] Jaccard Similarity (Top-10): {jaccard:.4f}")
-            print(f"[SHAP] Kendall’s Tau: {tau:.4f}")
-            print(f"[SHAP] Cosine Similarity: {cos_sim:.4f}")
+            print(f"[SHAP] Jaccard: {compute_jaccard_topk(shap_array[0], shap_array[1]):.4f}")
+            print(f"[SHAP] Kendall’s Tau: {compute_kendall_tau(shap_array[0], shap_array[1]):.4f}")
+            print(f"[SHAP] Cosine Sim: {cosine_similarity_shap(shap_array[0], shap_array[1]):.4f}")
 
-        flip_rate = compute_flip_rate(base_preds, masked_preds)
-        conf_delta = compute_confidence_change(base_preds, masked_preds)
-        aopc = compute_aopc(algorithm, X_eval, shap_vals, evaluate_shap_impact)
-        entropy = compute_shap_entropy(shap_array)
-        coherence = compute_feature_coherence(shap_array)
+        # 🔬 4D-specific visualization and metrics
+        plot_4d_shap_surface(shap_array[0], output_path="shap_4d_surface.png")
+        plot_4d_heat_volume(shap_array[0], output_path="shap_4d_volume.html")
 
-        print(f"[SHAP] Flip Rate: {flip_rate:.4f}")
-        print(f"[SHAP] Confidence Change: {conf_delta:.4f}")
-        print(f"[SHAP] AOPC: {aopc:.4f}")
-        print(f"[SHAP] Entropy: {entropy:.4f}")
-        print(f"[SHAP] Feature Coherence: {coherence:.4f}")
+        print(f"[SHAP4D] Channel Variance: {compute_shap_channel_variance(shap_array[0]):.4f}")
+        print(f"[SHAP4D] Temporal Entropy: {compute_temporal_entropy(shap_array[0]):.4f}")
+        print(f"[SHAP4D] Mutual Info: {compute_mutual_info(X_eval[0].cpu().numpy(), shap_array[0]):.4f}")
+        print(f"[SHAP4D] PCA Alignment: {compute_shap_pca_alignment(X_eval[0].cpu().numpy(), shap_array[0]):.4f}")
 
-    # ==== Final Training Curves ====
     plt.figure(figsize=(12, 8))
     plt.subplot(2, 1, 1)
     plt.plot(logs['epoch'], logs['class_loss'], label="Class Loss", marker='o')
