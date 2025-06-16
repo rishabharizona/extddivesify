@@ -86,8 +86,8 @@ def plot_4d_shap_surface(shap_values, output_path="shap_4d_surface.html", title=
 # ===========================
 
 def compute_shap_channel_variance(shap_array):
-    """Returns per-channel SHAP variance across time."""
-    return shap_array.var(axis=2).mean(axis=0)  # mean variance over samples
+    """Returns single scalar mean variance across all channels and samples."""
+    return shap_array.var(axis=2).mean()  # mean over samples, channels, and time
 
 def compute_shap_temporal_entropy(shap_array):
     """Entropy over time for each channel's SHAP distribution."""
