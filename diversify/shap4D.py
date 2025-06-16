@@ -42,6 +42,37 @@ def plot_emg_shap_4d(signal, shap_val, sample_id=0, title="4D EMG SHAP Visualiza
     fig.update_traces(marker=dict(size=3))
     fig.show()
 
+# ==============================
+# 🌐 4D SHAP Surface Plot
+# ==============================
+def plot_4d_shap_surface(shap_values, output_path="shap_4d_surface.html", title="4D SHAP Visualization"):
+    # Assumes shap_values has shape (N, Channels, 1, Time)
+    if isinstance(shap_values, list):
+        shap_array = shap_values[0].values
+    else:
+        shap_array = shap_values.values
+
+    sample = shap_array[0]  # (Channels, 1, Time)
+    sample = sample.squeeze()  # (Channels, Time)
+
+    x = np.arange(sample.shape[1])  # Time
+    y = np.arange(sample.shape[0])  # Channels
+    X, Y = np.meshgrid(x, y)
+
+    fig = go.Figure(data=[go.Surface(z=sample, x=X, y=Y, colorscale='RdBu', colorbar=dict(title='SHAP'))])
+    fig.update_layout(
+        title=title,
+        autosize=True,
+        margin=dict(l=20, r=20, t=50, b=20),
+        scene=dict(
+            xaxis_title='Time Steps',
+            yaxis_title='Channels',
+            zaxis_title='SHAP Value',
+        )
+    )
+    fig.write_html(output_path)
+    print(f"[INFO] Saved 4D SHAP surface plot to: {output_path}")
+
 # ===========================
 # 📏 Advanced SHAP Metrics
 # ===========================
