@@ -215,7 +215,6 @@ def main(args):
             original_labels = np.argmax(base_preds, axis=1)
         
             print(f"[Ablation] Accuracy post SHAP shuffle: {(post_labels == original_labels).mean():.4f}")
-            import matplotlib.pyplot as plt
 
             # Compute confidence scores (max softmax probability)
             base_conf = base_preds.max(axis=1)   # shape: (N,)
