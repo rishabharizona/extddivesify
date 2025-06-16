@@ -177,7 +177,7 @@ def main(args):
         plt.savefig("confusion_matrix.png", dpi=300)
         plt.show()
 
-        plot_shap_heatmap(shap_array, output_path="shap_temporal_heatmap.png", already_numpy=True)
+        plot_shap_heatmap(shap_array, output_path="shap_temporal_heatmap.png")
 
         print("\n📊 Training baseline model for SHAP comparison...")
         baseline_model = algorithm_class(args).cuda()
