@@ -211,8 +211,8 @@ def main(args):
         
             # Step 5: Evaluate accuracy after ablation
             post_preds = algorithm.predict(X_ablation)
-            post_labels = torch.argmax(post_preds, dim=1).cpu().numpy()
-            original_labels = torch.argmax(base_preds, axis=1)
+            post_labels = np.argmax(post_preds.detach().cpu().numpy(), axis=1)
+            original_labels = np.argmax(base_preds, axis=1)
         
             print(f"[Ablation] Accuracy post SHAP shuffle: {(post_labels == original_labels).mean():.4f}")
 
