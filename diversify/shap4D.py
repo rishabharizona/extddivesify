@@ -111,8 +111,8 @@ def compare_top_k_channels(shap1, shap2, k=5):
 
 def compute_mutual_info(signal, shap_array):
     """Estimates mutual info between signal & SHAP."""
-    signal_flat = signal.flatten()
-    shap_flat = shap_array.flatten()
+    signal_flat = np.ravel(signal)
+    shap_flat = np.ravel(shap_array)
     return mutual_info_score(np.digitize(signal_flat, bins=20), np.digitize(shap_flat, bins=20))
 
 def compute_pca_alignment(shap_array):
