@@ -215,6 +215,109 @@ def main(args):
             original_labels = np.argmax(base_preds, axis=1)
         
             print(f"[Ablation] Accuracy post SHAP shuffle: {(post_labels == original_labels).mean():.4f}")
+            import matplotlib.pyplot as plt
+
+            # Compute confidence scores (max softmax probability)
+            base_conf = base_preds.max(axis=1)   # shape: (N,)
+            post_conf = post_preds.detach().cpu().numpy().max(axis=1)
+            
+            # 📊 Plot comparison
+            plt.figure(figsize=(10, 5))
+            plt.plot(base_conf, label='Original Confidence', marker='o')
+            plt.plot(post_conf, label='Post-Ablation Confidence', marker='x')
+            plt.xlabel("Sample Index")
+            plt.ylabel("Confidence (Max Softmax Prob)")
+            plt.title("Confidence Before vs After SHAP-Ablation")
+            plt.grid(True)
+            plt.legend()
+            plt.tight_layout()
+            plt.savefig("confidence_comparison_ablation.png", dpi=300)
+            plt.show()
+            # Histogram: Confidence distributions
+            plt.figure(figsize=(10, 5))
+            plt.hist(base_conf, bins=20, alpha=0.6, label="Original Confidence", color="blue", density=True)
+            plt.hist(post_conf, bins=20, alpha=0.6, label="Post-Ablation Confidence", color="red", density=True)
+            plt.title("Histogram: Confidence Distribution Before vs After SHAP Ablation")
+            plt.xlabel("Confidence (Max Softmax Prob)")
+            plt.ylabel("Density")
+            plt.legend()
+            plt.tight_layout()
+            plt.savefig("histogram_confidence_comparison.png", dpi=300)
+            plt.show()
+            from scipy.stats import entropy as kl_divergence
+            
+            # Normalize histograms
+            hist_base, bins = np.histogram(base_conf, bins=20, range=(0, 1), density=True)
+            hist_post, _ = np.histogram(post_conf, bins=bins, density=True)
+            
+            # Avoid zero division
+            hist_base += 1e-10
+            hist_post += 1e-10
+            
+            kl_score = kl_divergence(hist_base, hist_post)
+            print(f"[SHAP Ablation] KL Divergence (Original vs Post-Ablation): {kl_score:.4f}")
+            # Boxplot comparison
+            plt.figure(figsize=(8, 5))
+            plt.boxplot([base_conf, post_conf], labels=["Original", "Post-Ablation"])
+            plt.title("Boxplot: Confidence Before vs After SHAP Ablation")
+            plt.ylabel("Confidence (Max Softmax Probability)")
+            plt.grid(True)
+            plt.tight_layout()
+            plt.savefig("boxplot_confidence_comparison.png", dpi=300)
+            plt.show()
+
+            from collections import defaultdict
+            
+            # Convert predictions
+            true_labels_np = np.array(true_labels)
+            pred_labels_np = np.array(pred_labels)
+            
+            # Get confidence vectors
+            base_conf_vec = base_preds.max(axis=1)
+            post_conf_vec = post_preds.detach().cpu().numpy().max(axis=1)
+            
+            # Group confidence drops by class
+            drop_by_class = defaultdict(list)
+            for i, label in enumerate(true_labels_np[:len(base_conf_vec)]):  # use true label
+                drop = base_conf_vec[i] - post_conf_vec[i]
+                drop_by_class[label].append(drop)
+            
+            # Compute mean drop per class
+            class_ids = sorted(drop_by_class.keys())
+            mean_drops = [np.mean(drop_by_class[c]) for c in class_ids]
+            
+            # 📊 Bar Plot
+            plt.figure(figsize=(10, 5))
+            plt.bar(class_ids, mean_drops, color="purple")
+            plt.xlabel("Class Label")
+            plt.ylabel("Average Confidence Drop")
+            plt.title("Confidence Drop per Class (Post SHAP Ablation)")
+            plt.xticks(class_ids)
+            plt.grid(True)
+            plt.tight_layout()
+            plt.savefig("confidence_drop_per_class.png", dpi=300)
+            plt.show()
+            
+            from scipy.stats import pearsonr
+            
+            # Use sample-wise SHAP magnitude & confidence
+            shap_strength = shap_array.reshape(len(shap_array), -1).mean(axis=1)
+            conf_strength = base_preds.max(axis=1)
+            
+            # Pearson correlation
+            corr, pval = pearsonr(shap_strength, conf_strength)
+            print(f"[SHAP vs Confidence] Pearson Correlation: {corr:.4f} (p={pval:.4g})")
+            
+            # Optional scatter plot
+            plt.figure(figsize=(6, 5))
+            plt.scatter(shap_strength, conf_strength, c='teal', alpha=0.7)
+            plt.xlabel("Mean SHAP Magnitude")
+            plt.ylabel("Model Confidence")
+            plt.title(f"SHAP vs Confidence (r={corr:.2f})")
+            plt.grid(True)
+            plt.tight_layout()
+            plt.savefig("shap_vs_confidence_correlation.png", dpi=300)
+            plt.show()
 
 
 
