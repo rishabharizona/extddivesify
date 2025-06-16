@@ -139,6 +139,8 @@ def main(args):
 
         # 🔬 4D-specific visualization and metrics
         plot_emg_shap_4d(X_eval, shap_array)
+        # Reshape SHAP array from (samples, 1, time, aux) to (samples, channels, time)
+        shap_array_reshaped = shap_array.reshape(shap_array.shape[0], -1, shap_array.shape[2])
 
         print(f"[SHAP4D] Channel Variance: {compute_shap_channel_variance(shap_array):.4f}")
         print(f"[SHAP4D] Temporal Entropy: {compute_shap_temporal_entropy(shap_array_reshaped):.4f}")
