@@ -12,12 +12,8 @@ from datautil.getdataloader_single import get_act_dataloader
 from shap_utils import *
 from shap_utils_extended import *
 from shap4D import (
-    plot_4d_shap_surface,
-    plot_4d_heat_volume,
-    compute_shap_channel_variance,
-    compute_temporal_entropy,
-    compute_mutual_info,
-    compute_shap_pca_alignment
+    plot_emg_shap_4d,
+    evaluate_advanced_shap_metrics
 )
 
 def main(args):
@@ -118,13 +114,10 @@ def main(args):
             print(f"[SHAP] Cosine Sim: {cosine_similarity_shap(shap_array[0], shap_array[1]):.4f}")
 
         # 🔬 4D-specific visualization and metrics
-        plot_4d_shap_surface(shap_array[0], output_path="shap_4d_surface.png")
-        plot_4d_heat_volume(shap_array[0], output_path="shap_4d_volume.html")
-
-        print(f"[SHAP4D] Channel Variance: {compute_shap_channel_variance(shap_array[0]):.4f}")
-        print(f"[SHAP4D] Temporal Entropy: {compute_temporal_entropy(shap_array[0]):.4f}")
-        print(f"[SHAP4D] Mutual Info: {compute_mutual_info(X_eval[0].cpu().numpy(), shap_array[0]):.4f}")
-        print(f"[SHAP4D] PCA Alignment: {compute_shap_pca_alignment(X_eval[0].cpu().numpy(), shap_array[0]):.4f}")
+        plot_emg_shap_4d(X_eval, shap_array, sample_id=0)
+        metrics = evaluate_advanced_shap_metrics(shap_array, X_eval.cpu().numpy())
+        for k, v in metrics.items():
+            print(f"[SHAP4D] {k}: {v:.4f}")
 
     plt.figure(figsize=(12, 8))
     plt.subplot(2, 1, 1)
