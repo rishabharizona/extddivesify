@@ -163,10 +163,19 @@ def main(args):
         print(f"[SHAP4D] Mutual Info: {compute_mutual_info(signal_sample, shap_sample):.4f}")
         shap_array_reduced = shap_array.mean(axis=-1)
         print(f"[SHAP4D] PCA Alignment: {compute_pca_alignment(shap_array_reduced):.4f}")
-        true_labels = algorithm.get_labels(valid_loader)
-        pred_labels = algorithm.predict(valid_loader)
-        ConfusionMatrixDisplay.from_predictions(true_labels, pred_labels)
-        plt.savefig("confusion_matrix.png")
+        true_labels, pred_labels = [], []
+        for data in valid_loader:
+            x, y = data[0].cuda(), data[1]
+            preds = algorithm.predict(x).cpu()
+            true_labels.extend(y.cpu().numpy())
+            pred_labels.extend(preds.numpy())
+
+        cm = confusion_matrix(true_labels, pred_labels)
+        disp = ConfusionMatrixDisplay(confusion_matrix=cm)
+        disp.plot(cmap="Blues")
+        plt.title("Confusion Matrix (Validation Set)")
+        plt.savefig("confusion_matrix.png", dpi=300)
+        plt.show()
 
         plot_shap_heatmap(shap_array, output_path="shap_temporal_heatmap.png")
 
