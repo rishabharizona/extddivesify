@@ -144,7 +144,9 @@ def main(args):
 
         print(f"[SHAP4D] Channel Variance: {compute_shap_channel_variance(shap_array):.4f}")
         print(f"[SHAP4D] Temporal Entropy: {compute_shap_temporal_entropy(shap_array_reshaped):.4f}")
-        print(f"[SHAP4D] Mutual Info: {compute_mutual_info(X_eval[0].cpu().numpy(), shap_array[0]):.4f}")
+        signal_sample = X_eval[0].cpu().numpy()                     # shape: (8,1,200)
+        shap_sample = shap_array[0].mean(axis=-1)                   # reduce (8,1,200,6) → (8,1,200)
+        print(f"[SHAP4D] Mutual Info: {compute_mutual_info(signal_sample, shap_sample):.4f}")
         print(f"[SHAP4D] PCA Alignment: {compute_pca_alignment(shap_array):.4f}")
 
     plt.figure(figsize=(12, 8))
