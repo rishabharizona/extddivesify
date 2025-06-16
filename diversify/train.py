@@ -141,7 +141,7 @@ def main(args):
         plot_emg_shap_4d(X_eval, shap_array)
 
         print(f"[SHAP4D] Channel Variance: {compute_shap_channel_variance(shap_array):.4f}")
-        print(f"[SHAP4D] Temporal Entropy: {compute_shap_temporal_entropy(shap_array):.4f}")
+        print(f"[SHAP4D] Temporal Entropy: {compute_shap_temporal_entropy(shap_array_reshaped):.4f}")
         print(f"[SHAP4D] Mutual Info: {compute_mutual_info(X_eval[0].cpu().numpy(), shap_array[0]):.4f}")
         print(f"[SHAP4D] PCA Alignment: {compute_pca_alignment(shap_array):.4f}")
 
