@@ -147,7 +147,7 @@ def main(args):
             print(f"[WARNING] plot_emg_shap_4d failed to render: {e}")
             from shap4D import plot_4d_shap_surface
             plot_4d_shap_surface(shap_vals, output_path="fallback_shap_4d_surface.html")
-
+        
         # Reshape SHAP array from (samples, 1, time, aux) to (samples, channels, time)
         shap_array_reshaped = shap_array.reshape(shap_array.shape[0], -1, shap_array.shape[2])
 
