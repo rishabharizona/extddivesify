@@ -111,9 +111,19 @@ def compare_top_k_channels(shap1, shap2, k=5):
 
 def compute_mutual_info(signal, shap_array):
     """Estimates mutual info between signal & SHAP."""
-    signal_flat = np.ravel(signal)
-    shap_flat = np.ravel(shap_array)
-    return mutual_info_score(np.digitize(signal_flat, bins=20), np.digitize(shap_flat, bins=20))
+    signal_flat = np.ravel(signal).astype(float)
+    shap_flat = np.ravel(shap_array).astype(float)
+
+    # Create actual bin edges for digitization (not just `bins=20`)
+    bins_signal = np.histogram_bin_edges(signal_flat, bins=20)
+    bins_shap = np.histogram_bin_edges(shap_flat, bins=20)
+
+    # Digitize using proper bin edges
+    signal_binned = np.digitize(signal_flat, bins_signal)
+    shap_binned = np.digitize(shap_flat, bins_shap)
+
+    return mutual_info_score(signal_binned, shap_binned)
+
 
 def compute_pca_alignment(shap_array):
     """Measures alignment of SHAP with 1st PC of original signal."""
