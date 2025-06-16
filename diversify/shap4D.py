@@ -64,13 +64,24 @@ def plot_4d_shap_surface(shap_values, output_path="shap_4d_surface.html", title=
         shap_array = shap_values.values
 
     sample = shap_array[0]  # (Channels, 1, Time)
-    sample = sample.squeeze()  # (Channels, Time)
+    sample = sample.squeeze()  # → (Channels, Time)
+
+    # Safety check
+    if sample.ndim != 2:
+        raise ValueError(f"[plot_4d_shap_surface] Expected shape (channels, time), got {sample.shape}")
 
     x = np.arange(sample.shape[1])  # Time
     y = np.arange(sample.shape[0])  # Channels
     X, Y = np.meshgrid(x, y)
 
-    fig = go.Figure(data=[go.Surface(z=sample, x=X, y=Y, colorscale='RdBu', colorbar=dict(title='SHAP'))])
+    fig = go.Figure(data=[go.Surface(
+        z=sample,
+        x=X,
+        y=Y,
+        colorscale='RdBu',
+        colorbar=dict(title='SHAP')
+    )])
+
     fig.update_layout(
         title=title,
         autosize=True,
@@ -81,6 +92,14 @@ def plot_4d_shap_surface(shap_values, output_path="shap_4d_surface.html", title=
             zaxis_title='SHAP Value',
         )
     )
+
+    # Show in notebook/Colab
+    try:
+        fig.show()
+    except Exception as e:
+        print(f"[WARNING] Plot rendering failed, saving HTML instead. Reason: {e}")
+
+    # Always save as fallback
     fig.write_html(output_path)
     print(f"[INFO] Saved 4D SHAP surface plot to: {output_path}")
 
