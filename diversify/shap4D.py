@@ -126,15 +126,31 @@ def compute_mutual_info(signal, shap_array):
 
 
 def compute_pca_alignment(shap_array):
-    """Measures alignment of SHAP with 1st PC of original signal."""
+    """
+    Measures alignment of SHAP values with the first principal component (PC1)
+    across channels and time for each sample. Returns average absolute Pearson correlation.
+    """
+    # If shap_array has shape (B, C, T, F), reduce over last axis
+    if shap_array.ndim == 4:
+        shap_array = shap_array.mean(axis=-1)  # → shape: (B, C, T)
     B, C, T = shap_array.shape
     pca_scores = []
     for b in range(B):
+        # Transpose to (T, C) so PCA is applied across channels at each time point
+        sample = shap_array[b].T  # shape: (T, C)
+
+        if sample.shape[0] < 2 or sample.shape[1] < 2:
+            pca_scores.append(0.0)
+            continue
         pca = PCA(n_components=1)
-        pc1 = pca.fit_transform(shap_array[b])[:, 0]
-        shap_mean = shap_array[b].mean(axis=0)
-        corr, _ = pearsonr(pc1, shap_mean)
-        pca_scores.append(abs(corr))
+        pc1 = pca.fit_transform(sample).flatten()       # shape: (T,)
+        shap_mean = shap_array[b].mean(axis=0)          # shape: (T,)
+        # Align shape for correlation
+        if len(pc1) == len(shap_mean):
+            corr, _ = pearsonr(pc1, shap_mean)
+            pca_scores.append(abs(corr))
+        else:
+            pca_scores.append(0.0)
     return np.mean(pca_scores)
 
 # ============================
