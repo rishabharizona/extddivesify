@@ -47,6 +47,9 @@ def plot_emg_shap_4d(signal, shap_val, sample_id=0, title="4D EMG SHAP Visualiza
     )
     fig.update_traces(marker=dict(size=3))
     fig.show()
+# Save HTML fallback
+    fig.write_html(f"{title.replace(' ', '_')}.html")
+    print(f"[INFO] Saved fallback HTML plot: {title.replace(' ', '_')}.html")
 
 
 
