@@ -243,6 +243,7 @@ If using this extended framework, please cite:
 	  title={EXT-D-DIVERSIFY: Explainability-Enhanced Domain Generalization},
 	  author={Rishabh Gupta et al.},
 	  year={2025},
+          e-mail- rishabhgupta8218@gmail.com,
 	  note={https://github.com/rishabharizona/extddivesify}
 	}
 
