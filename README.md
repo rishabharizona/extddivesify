@@ -8,7 +8,7 @@ The pipeline is particularly tailored for high-dimensional data like Electromyog
 2.1. Training Pipeline
 
 The training process follows a multi-stage domain adaptation strategy. It iteratively updates the model's components to learn domain-invariant features.
-<details> <summary>📘 Click to expand pipeline diagram</summary>	
+ 	
 	
 	        +--------------------------+
 		|      Input Data          |
@@ -53,7 +53,7 @@ The training process follows a multi-stage domain adaptation strategy. It iterat
     |      Best Model Saved      |
     |  (Based on Valid Accuracy) |
     +----------------------------+
-</details>
+
 
 2.2. SHAP Explainability & Evaluation Pipeline
 
@@ -194,7 +194,7 @@ This project leverages SHAP to not only explain model predictions but also to ev
 
 	## 📈 Evaluation Metrics & SHAP Analysis
 
-This framework integrates several SHAP-based evaluation techniques to assess not only **feature importance**, but also the **reliability**, **sparsity**, and **causal influence** of explanations.
+	This framework integrates several SHAP-based evaluation techniques to assess not only **feature importance**, but also the **reliability**, **sparsity**, and **causal influence** of explanations.
 	
 	| **Metric / Plot**        | **Purpose**                                                                                  | **Implemented In**         |
 	|--------------------------|----------------------------------------------------------------------------------------------|----------------------------|
