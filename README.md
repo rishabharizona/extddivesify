@@ -6,6 +6,8 @@ This project implements a domain adaptation algorithm for time-series classifica
 
 The pipeline is particularly tailored for high-dimensional data like Electromyography (EMG) signals, featuring a comprehensive suite of SHAP-based metrics and visualizations, including novel 4D SHAP analysis techniques.
 
+![image](https://github.com/user-attachments/assets/33673366-109a-42d6-9af7-ead8718983df)
+
 ---
 
 ### 2. Core Pipelines
