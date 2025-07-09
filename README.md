@@ -1,6 +1,6 @@
 ## SHAP-Enhanced Domain Adaptation for Time-Series Classification
 
-1. Overview
+### 1. Overview
 
 This project implements a domain adaptation algorithm for time-series classification, with a strong emphasis on model explainability using SHAP (SHapley Additive exPlanations). The primary goal is to train a robust classifier that generalizes well to new, unseen target domains while providing deep insights into the model's decision-making process.
 
@@ -8,9 +8,9 @@ The pipeline is particularly tailored for high-dimensional data like Electromyog
 
 ---
 
-2. Core Pipelines
+### 2. Core Pipelines
    
-2.1. Training Pipeline
+#### 2.1. Training Pipeline
 
 The training process follows a multi-stage domain adaptation strategy. It iteratively updates the model's components to learn domain-invariant features.
  	
@@ -60,7 +60,7 @@ The training process follows a multi-stage domain adaptation strategy. It iterat
     +----------------------------+
 
 
-2.2. SHAP Explainability & Evaluation Pipeline
+#### 2.2. SHAP Explainability & Evaluation Pipeline
 
 After training, the best model is subjected to a rigorous explainability and performance analysis pipeline using SHAP.
 
@@ -69,25 +69,25 @@ After training, the best model is subjected to a rigorous explainability and per
 
 ---
 
-3. Key Features
+### 3. Key Features
 
-    Domain Adaptation: Implements a sophisticated training regimen to handle domain shift between training and testing data.
+Domain Adaptation: Implements a sophisticated training regimen to handle domain shift between training and testing data.
 
-    Comprehensive SHAP Analysis: Goes beyond standard summary plots to include:
+Comprehensive SHAP Analysis: Goes beyond standard summary plots to include:
 
-        Extended Metrics: Flip Rate, Area Over the Perturbation Curve (AOPC), SHAP Entropy, and Feature Coherence.
+Extended Metrics: Flip Rate, Area Over the Perturbation Curve (AOPC), SHAP Entropy, and Feature Coherence.
 
-        Similarity Metrics: Jaccard Index, Kendall's Tau, and Cosine Similarity for comparing SHAP explanations.
+Similarity Metrics: Jaccard Index, Kendall's Tau, and Cosine Similarity for comparing SHAP explanations.
 
-    4D SHAP Visualization: Novel methods for visualizing SHAP values for spatio-temporal data, such as multi-channel EMG signals.
+4D SHAP Visualization: Novel methods for visualizing SHAP values for spatio-temporal data, such as multi-channel EMG signals.
 
-    Ablation Studies: Validates the importance of features identified by SHAP by perturbing them and measuring the impact on model performance.
+Ablation Studies: Validates the importance of features identified by SHAP by perturbing them and measuring the impact on model performance.
 
-    Detailed Logging & Visualization: Generates numerous plots and logs for training progress, model performance, and SHAP results.
+Detailed Logging & Visualization: Generates numerous plots and logs for training progress, model performance, and SHAP results.
 
 ---
 
-5. File Structure (used specifically in SHAP)
+### 5. File Structure (used specifically in SHAP)
 
 
 		.
@@ -106,32 +106,32 @@ After training, the best model is subjected to a rigorous explainability and per
 
 ---
 
-6. Dependencies
+### 6. Dependencies
 
 The project requires the following major Python libraries. You can install them using pip:
 
 	pip install torch pandas numpy scikit-learn matplotlib shap plotly
 ---
 
-7. Datasets Supported
+### 7. Datasets Supported
 
-    EMG (electromyography)
+EMG (electromyography)
 
 		# Download the dataset
-		!wget https://wjdcloud.blob.core.windows.net/dataset/diversity_emg.zip
-		!unzip diversity_emg.zip && mv emg data/
+		wget https://wjdcloud.blob.core.windows.net/dataset/diversity_emg.zip
+		unzip diversity_emg.zip && mv emg data/
 		
 		# Create necessary directories
-		!mkdir -p ./data/train_output/act/
+		mkdir -p ./data/train_output/act/
 		
-		!mkdir -p ./data/emg
-		!mv emg/* ./data/emg
+		mkdir -p ./data/emg
+		mv emg/* ./data/emg
 
 Data utilities are prebuilt in datautil/actdata and dynamically loaded via getdataloader_single.py.
 
 ---
 
-8. How to Run
+### 8. How to Run
 
 Execute the main training and evaluation script from your terminal. You can customize the behavior using command-line arguments.
 
@@ -180,7 +180,7 @@ Common Arguments:
  
  ---
 
-9. Output and Artifacts
+### 9. Output and Artifacts
 
 When run with --enable_shap, the script will generate several output files in the root directory:
 
@@ -206,7 +206,7 @@ When run with --enable_shap, the script will generate several output files in th
 
 ---
 
-10. SHAP Analysis In-Depth
+### 10. SHAP Analysis In-Depth
 
 This project leverages SHAP to not only explain model predictions but also to evaluate the model's robustness and coherence.
 
@@ -227,7 +227,8 @@ This project leverages SHAP to not only explain model predictions but also to ev
 
 ---
 
-11. License
+### 11. License
+This project is free for academic and commercial use with attribution.
 
 If using this extended framework, please cite:
 
