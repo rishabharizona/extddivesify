@@ -1,9 +1,12 @@
-SHAP-Enhanced Domain Adaptation for Time-Series Classification
+## SHAP-Enhanced Domain Adaptation for Time-Series Classification
+
 1. Overview
 
 This project implements a domain adaptation algorithm for time-series classification, with a strong emphasis on model explainability using SHAP (SHapley Additive exPlanations). The primary goal is to train a robust classifier that generalizes well to new, unseen target domains while providing deep insights into the model's decision-making process.
 
 The pipeline is particularly tailored for high-dimensional data like Electromyography (EMG) signals, featuring a comprehensive suite of SHAP-based metrics and visualizations, including novel 4D SHAP analysis techniques.
+
+---
 
 2. Core Pipelines
    
@@ -64,6 +67,7 @@ After training, the best model is subjected to a rigorous explainability and per
 ![fcd992cd-7ff5-4fc3-b0ae-19727a4459cb](https://github.com/user-attachments/assets/f1e3f214-d836-4d32-a27e-a90aeb96ab41)
 
 
+---
 
 3. Key Features
 
@@ -81,7 +85,9 @@ After training, the best model is subjected to a rigorous explainability and per
 
     Detailed Logging & Visualization: Generates numerous plots and logs for training progress, model performance, and SHAP results.
 
-4. File Structure (used specifically in SHAP)
+---
+
+5. File Structure (used specifically in SHAP)
 
 
 		.
@@ -98,14 +104,16 @@ After training, the best model is subjected to a rigorous explainability and per
 		├── shap_utils_extended.py   # Advanced SHAP-based metric calculations
 		└── shap4D.py                # Functions for 4D SHAP analysis and visualization
 
+---
 
-5. Dependencies
+6. Dependencies
 
 The project requires the following major Python libraries. You can install them using pip:
 
 	pip install torch pandas numpy scikit-learn matplotlib shap plotly
+---
 
-6. Datasets Supported
+7. Datasets Supported
 
     EMG (electromyography)
 
@@ -121,7 +129,9 @@ The project requires the following major Python libraries. You can install them 
 
 Data utilities are prebuilt in datautil/actdata and dynamically loaded via getdataloader_single.py.
 
-7. How to Run
+---
+
+8. How to Run
 
 Execute the main training and evaluation script from your terminal. You can customize the behavior using command-line arguments.
 
@@ -167,8 +177,10 @@ Common Arguments:
 	--enable_shap: A crucial flag to activate the entire SHAP analysis pipeline after training. Defaults to False.
  
 	--seed: Set the random seed for reproducibility.
+ 
+ ---
 
-8. Output and Artifacts
+9. Output and Artifacts
 
 When run with --enable_shap, the script will generate several output files in the root directory:
 
@@ -192,7 +204,9 @@ When run with --enable_shap, the script will generate several output files in th
 
     shap_vs_confidence_correlation.png: Scatter plot showing the relationship between SHAP magnitude and model confidence.
 
-9. SHAP Analysis In-Depth
+---
+
+10. SHAP Analysis In-Depth
 
 This project leverages SHAP to not only explain model predictions but also to evaluate the model's robustness and coherence.
 
@@ -211,8 +225,9 @@ This project leverages SHAP to not only explain model predictions but also to ev
 	| **SHAP Ablation**         | Shuffles top SHAP-ranked time steps and measures the drop in accuracy/confidence.            | `train.py`                  |
 	| **SHAP vs. Confidence Corr.** | Computes correlation between SHAP importance and model prediction confidence.             | `train.py`                  |
 
+---
 
-10. License
+11. License
 
 If using this extended framework, please cite:
 
