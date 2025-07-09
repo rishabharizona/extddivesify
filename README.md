@@ -79,13 +79,13 @@ After training, the best model is subjected to a rigorous explainability and per
 
     Detailed Logging & Visualization: Generates numerous plots and logs for training progress, model performance, and SHAP results.
 
-4. File Structure
+4. File Structure (used specifically in SHAP)
 
-```
+
 		.
 		├── train.py                 # Main script to run training and SHAP analysis
 		├── alg/
-		│   ├── diversify.py
+		│   ├── alg/diversify.py
 		│   ├── alg.py               # Contains the core algorithm class definitions
 		│   └── opt.py               # Optimizer configurations
 		├── datautil/
