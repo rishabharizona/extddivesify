@@ -4,7 +4,9 @@ SHAP-Enhanced Domain Adaptation for Time-Series Classification
 This project implements a domain adaptation algorithm for time-series classification, with a strong emphasis on model explainability using SHAP (SHapley Additive exPlanations). The primary goal is to train a robust classifier that generalizes well to new, unseen target domains while providing deep insights into the model's decision-making process.
 
 The pipeline is particularly tailored for high-dimensional data like Electromyography (EMG) signals, featuring a comprehensive suite of SHAP-based metrics and visualizations, including novel 4D SHAP analysis techniques.
+
 2. Core Pipelines
+   
 2.1. Training Pipeline
 
 The training process follows a multi-stage domain adaptation strategy. It iteratively updates the model's components to learn domain-invariant features.
