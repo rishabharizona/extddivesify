@@ -81,10 +81,11 @@ After training, the best model is subjected to a rigorous explainability and per
 
 4. File Structure
 
+'''
 .
 ├── train.py                 # Main script to run training and SHAP analysis
 ├── alg/
-│   ├── __init__.py
+│   ├── diversify.py
 │   ├── alg.py               # Contains the core algorithm class definitions
 │   └── opt.py               # Optimizer configurations
 ├── datautil/
@@ -95,6 +96,7 @@ After training, the best model is subjected to a rigorous explainability and per
 ├── shap_utils_extended.py   # Advanced SHAP-based metric calculations
 └── shap4D.py                # Functions for 4D SHAP analysis and visualization
 
+'''
 5. Dependencies
 
 The project requires the following major Python libraries. You can install them using pip:
