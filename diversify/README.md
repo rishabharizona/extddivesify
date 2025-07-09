@@ -2,6 +2,10 @@
 
 ### 1. Overview
 
+This project implements SHAP based explainability and extends the paper OUT-OF-DISTRIBUTION REPRESENTATION LEARNING FOR TIME SERIES CLASSIFICATION at ICLR 2023.
+
+Link- https://paperswithcode.com/paper/generalized-representations-learning-for-time 
+
 This project implements a domain adaptation algorithm for time-series classification, with a strong emphasis on model explainability using SHAP (SHapley Additive exPlanations). The primary goal is to train a robust classifier that generalizes well to new, unseen target domains while providing deep insights into the model's decision-making process.
 
 The pipeline is particularly tailored for high-dimensional data like Electromyography (EMG) signals, featuring a comprehensive suite of SHAP-based metrics and visualizations, including novel 4D SHAP analysis techniques.
