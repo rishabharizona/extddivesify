@@ -135,6 +135,7 @@ Basic Execution:
 
 Common Arguments:
 
+
         --data_dir: Path to the directory containing the input data.
 	
 	--task: Specifies the domain generalization task setting (e.g., cross_people for cross-subject evaluation).
@@ -162,7 +163,8 @@ Common Arguments:
 	--output: Directory path where all model outputs (checkpoints, logs, plots) will be stored.
 	
 	--enable_shap: A crucial flag to activate the entire SHAP analysis pipeline after training. Defaults to False.
-	    --seed: Set the random seed for reproducibility.
+ 
+	--seed: Set the random seed for reproducibility.
 
 8. Output and Artifacts
 
