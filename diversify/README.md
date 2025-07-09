@@ -122,6 +122,8 @@ The project requires the following major Python libraries. You can install them 
 
 ### 7. Datasets Supported
 
+Direct link - https://wjdcloud.blob.core.windows.net/dataset/diversity_emg.zip
+
 EMG (electromyography)
 
 		# Download the dataset
