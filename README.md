@@ -107,6 +107,16 @@ pip install torch pandas numpy scikit-learn matplotlib shap plotly
 
     EMG (electromyography)
 
+		# Download the dataset
+		!wget https://wjdcloud.blob.core.windows.net/dataset/diversity_emg.zip
+		!unzip diversity_emg.zip && mv emg data/
+		
+		# Create necessary directories
+		!mkdir -p ./data/train_output/act/
+		
+		!mkdir -p ./data/emg
+		!mv emg/* ./data/emg
+
 Data utilities are prebuilt in datautil/actdata and dynamically loaded via getdataloader_single.py.
 
 7. How to Run
@@ -116,6 +126,12 @@ Execute the main training and evaluation script from your terminal. You can cust
 Basic Execution:
 
 python train.py --data_dir ./data/ --task cross_people --test_envs 0 --dataset emg --algorithm diversify --latent_domain_num 10 --alpha1 1.0 --alpha 1.0 --lam 0.0 --local_epoch 3 --max_epoch 1 --lr 0.01 --output ./data/train_output/act/cross_people-emg-Diversify-0-10-1-1-0-3-50-0.01 --enable_shap
+
+python train.py --data_dir ./data/ --task cross_people --test_envs 1 --dataset emg --algorithm diversify --latent_domain_num 2 --alpha1 0.1 --alpha 10.0 --lam 0.0 --local_epoch 10 --max_epoch 2 --lr 0.01 --output ./data/train_output/act/cross_people-emg-Diversify-1-2-0.1-10-0-10-15-0.01 --enable_shap
+
+python train.py --data_dir ./data/ --task cross_people --test_envs 2 --dataset emg --algorithm diversify --latent_domain_num 20 --alpha1 0.5 --alpha 1.0 --lam 0.0 --local_epoch 1 --max_epoch 2 --lr 0.01 --output ./data/train_output/act/cross_people-emg-Diversify-2-20-0.5-1-0-1-150-0.01 --enable_shap
+
+python train.py --data_dir ./data/ --task cross_people --test_envs 3 --dataset emg --algorithm diversify --latent_domain_num 5 --alpha1 5.0 --alpha 0.1 --lam 0.0 --local_epoch 5 --max_epoch 2 --lr 0.01 --output ./data/train_output/act/cross_people-emg-Diversify-3-5-5-0.1-0-5-30-0.01 --enable_shap
 
 Common Arguments:
 
@@ -176,7 +192,21 @@ When run with --enable_shap, the script will generate several output files in th
 
 This project leverages SHAP to not only explain model predictions but also to evaluate the model's robustness and coherence.
 
-	<pre lang="markdown"> ## 📈 Evaluation Metrics & SHAP Analysis This framework integrates several SHAP-based evaluation techniques to assess not only **feature importance**, but also the **reliability**, **sparsity**, and **causal influence** of explanations. | **Metric / Plot** | **Purpose** | **Implemented In** | |------------------------------|-----------------------------------------------------------------------------------------------|----------------------------------| | **Summary / Force Plots** | Standard SHAP visualizations showing global and local feature importance. | `shap_utils.py` | | **Flip Rate** | Measures how often predictions flip when top SHAP features are removed from input. | `shap_utils_extended.py` | | **AOPC** | *(Area Over Perturbation Curve)*: Tracks change in confidence as top SHAP features are masked.| `shap_utils_extended.py` | | **SHAP Entropy** | Evaluates sparsity of SHAP explanations. Lower entropy → more focused and interpretable. | `shap_utils_extended.py` | | **Feature Coherence** | Checks if SHAP values are consistent for semantically related features (e.g., adjacent time). | `shap_utils_extended.py` | | **4D Surface / EMG Plot** | Visualizes SHAP importance across both time and spatial EMG sensor dimensions. | `shap4D.py` | | **SHAP Ablation** | Shuffles top SHAP-ranked time steps and measures the drop in accuracy/confidence. | `train.py` | | **SHAP vs. Confidence Corr.** | Computes correlation between SHAP importance and model prediction confidence. | `train.py` | </pre>
+	## 📈 Evaluation Metrics & SHAP Analysis
+
+This framework integrates several SHAP-based evaluation techniques to assess not only **feature importance**, but also the **reliability**, **sparsity**, and **causal influence** of explanations.
+	
+	| **Metric / Plot**        | **Purpose**                                                                                  | **Implemented In**         |
+	|--------------------------|----------------------------------------------------------------------------------------------|----------------------------|
+	| **Summary / Force Plots** | Standard SHAP visualizations showing global and local feature importance.                    | `shap_utils.py`             |
+	| **Flip Rate**             | Measures how often predictions flip when top SHAP features are removed from input.           | `shap_utils_extended.py`    |
+	| **AOPC**                  | *(Area Over Perturbation Curve)*: Tracks change in confidence as top SHAP features are masked.| `shap_utils_extended.py`    |
+	| **SHAP Entropy**          | Evaluates sparsity of SHAP explanations. Lower entropy → more focused and interpretable.    | `shap_utils_extended.py`    |
+	| **Feature Coherence**     | Checks if SHAP values are consistent for semantically related features (e.g., adjacent time).| `shap_utils_extended.py`    |
+	| **4D Surface / EMG Plot** | Visualizes SHAP importance across both time and spatial EMG sensor dimensions.               | `shap4D.py`                 |
+	| **SHAP Ablation**         | Shuffles top SHAP-ranked time steps and measures the drop in accuracy/confidence.            | `train.py`                  |
+	| **SHAP vs. Confidence Corr.** | Computes correlation between SHAP importance and model prediction confidence.             | `train.py`                  |
+
 
 10. License
 
