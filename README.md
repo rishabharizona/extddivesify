@@ -59,49 +59,8 @@ The training process follows a multi-stage domain adaptation strategy. It iterat
 
 After training, the best model is subjected to a rigorous explainability and performance analysis pipeline using SHAP.
 
-+--------------------------+
-|   Best Trained Model     |
-+--------------------------+
-            |
-            v
-+--------------------------------+
-|   1. Initialize SHAP Explainer |
-|   (e.g., DeepExplainer)        |
-|   with background data         |
-+--------------------------------+
-            |
-            v
-+--------------------------------+
-|   2. Compute SHAP Values       |
-|   for evaluation samples       |
-+--------------------------------+
-            |
-            v
-+--------------------------------+      +--------------------------------+
-|   3. Standard SHAP Analysis    |----->|   4. Extended SHAP Metrics     |
-|   - Summary & Force Plots      |      |   - Flip Rate, AOPC            |
-|   - Heatmaps                   |      |   - Entropy, Coherence         |
-+--------------------------------+      +--------------------------------+
-            |                                   |
-            v                                   v
-+--------------------------------+      +--------------------------------+
-|   5. 4D SHAP Analysis          |----->|   6. Ablation Studies          |
-|   (For spatio-temporal data)   |      |   - Shuffle important features |
-|   - Surface Plots, Channel Var.|      |   - Measure confidence drop    |
-+--------------------------------+      +--------------------------------+
-            |
-            v
-+--------------------------------+
-|      7. Performance Metrics    |
-|      - Confusion Matrix        |
-|      - Accuracy, Loss Plots    |
-+--------------------------------+
-            |
-            v
-+--------------------------+
-|    Generated Artifacts   |
-| (Plots, Logs, Metrics)   |
-+--------------------------+
+![fcd992cd-7ff5-4fc3-b0ae-19727a4459cb](https://github.com/user-attachments/assets/f1e3f214-d836-4d32-a27e-a90aeb96ab41)
+
 
 
 3. Key Features
