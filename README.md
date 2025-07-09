@@ -9,16 +9,16 @@ The pipeline is particularly tailored for high-dimensional data like Electromyog
 
 The training process follows a multi-stage domain adaptation strategy. It iteratively updates the model's components to learn domain-invariant features.
 <details> <summary>📘 Click to expand pipeline diagram</summary>
-+--------------------------+
-|      Input Data          |
-| (Train, Valid, Target)   |
-+--------------------------+
-             |
-             v
-+--------------------------+
-|  Initialize Algorithm    |
-|   (e.g., DANN, CDAN)     |
-+--------------------------+
+		+--------------------------+
+		|      Input Data          |
+		| (Train, Valid, Target)   |
+		+--------------------------+
+		             |
+		             v
+		+--------------------------+
+		|  Initialize Algorithm    |
+		|   (e.g., DANN, CDAN)     |
+		+--------------------------+
 
         //=============================\\
        ||        Training Loop         ||
