@@ -101,7 +101,7 @@ After training, the best model is subjected to a rigorous explainability and per
 
 The project requires the following major Python libraries. You can install them using pip:
 
-pip install torch pandas numpy scikit-learn matplotlib shap plotly
+	pip install torch pandas numpy scikit-learn matplotlib shap plotly
 
 6. Datasets Supported
 
