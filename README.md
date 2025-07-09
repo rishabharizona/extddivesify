@@ -176,77 +176,7 @@ When run with --enable_shap, the script will generate several output files in th
 
 This project leverages SHAP to not only explain model predictions but also to evaluate the model's robustness and coherence.
 
-Metric/Plot
-	
-
-Purpose
-	
-
-File
-
-Summary/Force Plots
-	
-
-Standard SHAP visualizations for global and local feature importance.
-	
-
-shap_utils.py
-
-Flip Rate
-	
-
-Measures how often a prediction changes when the most important features (per SHAP) are removed.
-	
-
-shap_utils_extended.py
-
-AOPC
-	
-
-(Area Over the Perturbation Curve) Aggregates the change in model confidence as features are removed.
-	
-
-shap_utils_extended.py
-
-SHAP Entropy
-	
-
-Quantifies the sparsity of the SHAP explanations. A lower entropy suggests a more focused explanation.
-	
-
-shap_utils_extended.py
-
-Feature Coherence
-	
-
-Measures if SHAP values for related features (e.g., adjacent time steps) are similar.
-	
-
-shap_utils_extended.py
-
-4D Surface/EMG Plot
-	
-
-Visualizes SHAP importance across both time and spatial channels (e.g., different EMG sensors).
-	
-
-shap4D.py
-
-SHAP Ablation
-	
-
-A direct test of SHAP's validity by shuffling the most important time steps and observing the drop in model accuracy and confidence.
-	
-
-train.py
-
-SHAP vs. Confidence Corr.
-	
-
-Analyzes if higher SHAP values correlate with higher model prediction confidence.
-	
-
-train.py
+<pre lang="markdown"> ## 📈 Evaluation Metrics & SHAP Analysis This framework integrates several SHAP-based evaluation techniques to assess not only **feature importance**, but also the **reliability**, **sparsity**, and **causal influence** of explanations. | **Metric / Plot** | **Purpose** | **Implemented In** | |------------------------------|-----------------------------------------------------------------------------------------------|----------------------------------| | **Summary / Force Plots** | Standard SHAP visualizations showing global and local feature importance. | `shap_utils.py` | | **Flip Rate** | Measures how often predictions flip when top SHAP features are removed from input. | `shap_utils_extended.py` | | **AOPC** | *(Area Over Perturbation Curve)*: Tracks change in confidence as top SHAP features are masked.| `shap_utils_extended.py` | | **SHAP Entropy** | Evaluates sparsity of SHAP explanations. Lower entropy → more focused and interpretable. | `shap_utils_extended.py` | | **Feature Coherence** | Checks if SHAP values are consistent for semantically related features (e.g., adjacent time). | `shap_utils_extended.py` | | **4D Surface / EMG Plot** | Visualizes SHAP importance across both time and spatial EMG sensor dimensions. | `shap4D.py` | | **SHAP Ablation** | Shuffles top SHAP-ranked time steps and measures the drop in accuracy/confidence. | `train.py` | | **SHAP vs. Confidence Corr.** | Computes correlation between SHAP importance and model prediction confidence. | `train.py` | </pre>
 
 10. License
 
