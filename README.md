@@ -81,51 +81,74 @@ After training, the best model is subjected to a rigorous explainability and per
 
 4. File Structure
 
-'''
-.
-├── train.py                 # Main script to run training and SHAP analysis
-├── alg/
-│   ├── diversify.py
-│   ├── alg.py               # Contains the core algorithm class definitions
-│   └── opt.py               # Optimizer configurations
-├── datautil/
-│   └── getdataloader_single.py # Data loading and preprocessing logic
-├── utils/
-│   └── util.py              # Utility functions (e.g., seeding, arg parsing)
-├── shap_utils.py            # Core SHAP computation and plotting functions
-├── shap_utils_extended.py   # Advanced SHAP-based metric calculations
-└── shap4D.py                # Functions for 4D SHAP analysis and visualization
+```
+		.
+		├── train.py                 # Main script to run training and SHAP analysis
+		├── alg/
+		│   ├── diversify.py
+		│   ├── alg.py               # Contains the core algorithm class definitions
+		│   └── opt.py               # Optimizer configurations
+		├── datautil/
+		│   └── getdataloader_single.py # Data loading and preprocessing logic
+		├── utils/
+		│   └── util.py              # Utility functions (e.g., seeding, arg parsing)
+		├── shap_utils.py            # Core SHAP computation and plotting functions
+		├── shap_utils_extended.py   # Advanced SHAP-based metric calculations
+		└── shap4D.py                # Functions for 4D SHAP analysis and visualization
 
-'''
+```
 5. Dependencies
 
 The project requires the following major Python libraries. You can install them using pip:
 
 pip install torch pandas numpy scikit-learn matplotlib shap plotly
 
-6. How to Run
+6. Datasets Supported
+
+    EMG (electromyography)
+
+Data utilities are prebuilt in datautil/actdata and dynamically loaded via getdataloader_single.py.
+
+7. How to Run
 
 Execute the main training and evaluation script from your terminal. You can customize the behavior using command-line arguments.
 
 Basic Execution:
 
-python train.py --algorithm DANN --enable_shap
+python train.py --data_dir ./data/ --task cross_people --test_envs 0 --dataset emg --algorithm diversify --latent_domain_num 10 --alpha1 1.0 --alpha 1.0 --lam 0.0 --local_epoch 3 --max_epoch 1 --lr 0.01 --output ./data/train_output/act/cross_people-emg-Diversify-0-10-1-1-0-3-50-0.01 --enable_shap
 
 Common Arguments:
 
-    --algorithm: Specify the domain adaptation algorithm to use (e.g., DANN).
+        --data_dir: Path to the directory containing the input data.
+	
+	--task: Specifies the domain generalization task setting (e.g., cross_people for cross-subject evaluation).
+	
+	--test_envs: Index of the environment (domain) to be used as the test set.
+	
+	--dataset: Name of the dataset to be used (e.g., emg for Electromyography).
+	
+	--algorithm: Specify the domain adaptation algorithm to use (e.g., DANN, CDAN, or diversify).
+	
+	--latent_domain_num: The number of latent domains to model.
+	
+	--alpha1: Weight for the loss used in the feature updater (e.g., domain alignment component).
+	
+	--alpha: Weight for the classifier update loss (e.g., supervised classification).
+	
+	--lam: Regularization strength for any auxiliary loss terms (e.g., entropy regularization); set to 0.0 to disable.
 
-    --latent_domain_num: The number of latent domains to model.
+	--local_epoch: Number of local update steps within each round.
+	
+	--max_epoch: Total number of training rounds (global epochs).
+	
+	--lr: Learning rate for the optimizer (e.g., SGD or Adam).
+	
+	--output: Directory path where all model outputs (checkpoints, logs, plots) will be stored.
+	
+	--enable_shap: A crucial flag to activate the entire SHAP analysis pipeline after training. Defaults to False.
+	    --seed: Set the random seed for reproducibility.
 
-    --max_epoch: Total number of training rounds.
-
-    --local_epoch: Number of local update steps within each round.
-
-    --enable_shap: A crucial flag to activate the entire SHAP analysis pipeline after training. Defaults to False.
-
-    --seed: Set the random seed for reproducibility.
-
-7. Output and Artifacts
+8. Output and Artifacts
 
 When run with --enable_shap, the script will generate several output files in the root directory:
 
@@ -149,7 +172,7 @@ When run with --enable_shap, the script will generate several output files in th
 
     shap_vs_confidence_correlation.png: Scatter plot showing the relationship between SHAP magnitude and model confidence.
 
-8. SHAP Analysis In-Depth
+9. SHAP Analysis In-Depth
 
 This project leverages SHAP to not only explain model predictions but also to evaluate the model's robustness and coherence.
 
@@ -224,6 +247,15 @@ Analyzes if higher SHAP values correlate with higher model prediction confidence
 	
 
 train.py
-9. License
 
-This project is licensed under the MIT License. See the LICENSE file for more details.
+10. License
+
+If using this extended framework, please cite:
+
+	@misc{extdd2025,
+	  title={EXT-D-DIVERSIFY: Explainability-Enhanced Domain Generalization},
+	  author={Rishabh Gupta et al.},
+	  year={2025},
+	  note={https://github.com/rishabharizona/extddivesify}
+	}
+
