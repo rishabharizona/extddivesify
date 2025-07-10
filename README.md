@@ -71,9 +71,9 @@ The training process follows a multi-stage domain adaptation strategy. It iterat
 
 After training, the best model is subjected to a rigorous explainability and performance analysis pipeline using SHAP.
 
-![fcd992cd-7ff5-4fc3-b0ae-19727a4459cb](https://github.com/user-attachments/assets/f1e3f214-d836-4d32-a27e-a90aeb96ab41)
+![fcd992cd-7ff5-4fc3-b0ae-19727a4459cb](https://github.com/user-attachments/assets/f1e3f214-d836-4d32-a27e-a90aeb96ab41)width="300"
 
-<img src="https://github.com/user-attachments/assets/f1e3f214-d836-4d32-a27e-a90aeb96ab41/fcd992cd-7ff5-4fc3-b0ae-19727a4459cb" alt="Diagram" width="300"/>
+
 
 
 
