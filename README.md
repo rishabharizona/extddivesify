@@ -223,7 +223,7 @@ When run with --enable_shap, the script will generate several output files in th
 
 This project leverages SHAP to not only explain model predictions but also to evaluate the model's robustness and coherence.
 
-	## 📈 Evaluation Metrics & SHAP Analysis
+	## 📈 Evaluation Metrics & SHAP Analysis(important ones)
 
 	This framework integrates several SHAP-based evaluation techniques to assess not only **feature importance**, but also the **reliability**, **sparsity**, and **causal influence** of explanations.
 	
