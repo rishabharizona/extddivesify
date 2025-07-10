@@ -158,7 +158,7 @@ Basic Execution:
 Common Arguments:
 
 
-        --data_dir: Path to the directory containing the input data.
+    --data_dir: Path to the directory containing the input data.
 	
 	--task: Specifies the domain generalization task setting (e.g., cross_people for cross-subject evaluation).
 	
